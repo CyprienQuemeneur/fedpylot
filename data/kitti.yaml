@@ -1,0 +1,12 @@
+# KITTI Vision Benchmark Suite - 2D Object Detection
+# https://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=2d
+
+# base path to subsets
+train: ./datasets/kitti
+val:  ./datasets/kitti
+
+# number of classes
+nc: 8
+
+# class names
+names: ['Car', 'Van', 'Truck', 'Pedestrian', 'Person_sitting', 'Cyclist', 'Tram', 'Misc']

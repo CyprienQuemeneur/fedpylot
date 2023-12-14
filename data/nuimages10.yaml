@@ -1,0 +1,14 @@
+# nuImages: large-scale autonomous driving dataset with image-level 2d annotations - https://www.nuscenes.org/nuimages
+# nuImages & nuScenes devkit - https://github.com/nutonomy/nuscenes-devkit
+# competitive 10 classes mapping taken from https://arxiv.org/pdf/1903.11027.pdf
+
+# base path to subsets
+train: ./datasets/nuimages10
+val: ./datasets/nuimages10
+
+# number of classes
+nc: 10
+
+# class names
+names: ['pedestrian', 'barrier', 'traffic_cone', 'bicycle', 'bus', 'car', 'construction_vehicle', 'motorcycle',
+        'trailer', 'truck']

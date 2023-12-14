@@ -1,0 +1,19 @@
+# nuImages: large-scale autonomous driving dataset with image-level 2d annotations - https://www.nuscenes.org/nuimages
+# nuImages & nuScenes devkit - https://github.com/nutonomy/nuscenes-devkit
+# default 23 classes mapping
+
+# base path to subsets
+train: ./datasets/nuimages23
+val: ./datasets/nuimages23
+
+# number of classes
+nc: 23
+
+# class names
+names: ['animal', 'human.pedestrian.adult', 'human.pedestrian.child', 'human.pedestrian.construction_worker',
+        'human.pedestrian.personal_mobility', 'human.pedestrian.police_officer', 'human.pedestrian.stroller',
+        'human.pedestrian.wheelchair', 'movable_object.barrier', 'movable_object.debris',
+        'movable_object.pushable_pullable', 'movable_object.trafficcone', 'static_object.bicycle_rack',
+        'vehicle.bicycle', 'vehicle.bus.bendy', 'vehicle.bus.rigid', 'vehicle.car', 'vehicle.construction',
+        'vehicle.emergency.ambulance', 'vehicle.emergency.police', 'vehicle.motorcycle', 'vehicle.trailer',
+        'vehicle.truck']
