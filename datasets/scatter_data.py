@@ -12,7 +12,7 @@ from mpi4py import MPI
 def copy_and_extract(dataset: str, local_storage: str, file: str) -> None:
     """Copy and extract the local dataset."""
     destination_directory = f'{local_storage}/fedyolov7-iov/datasets/{dataset}/'
-    shutil.copy(f'fedyolov7-iov/datasets/{dataset}/{file}', destination_directory)
+    shutil.copy(f'datasets/{dataset}/{file}', destination_directory)
     tar_file_path = f'{local_storage}/fedyolov7-iov/datasets/{dataset}/{file}'
     with tarfile.open(tar_file_path, 'r') as tar:
         tar.extractall(path=destination_directory)

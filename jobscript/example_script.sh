@@ -28,7 +28,7 @@ module load mpi4py
 source ~/venv-py39-fl/bin/activate
 
 # Transmit all files besides the datasets folder to the local storage of the compute nodes
-srun rsync -a --exclude="datasets" fedyolov7-iov $SLURM_TMPDIR
+srun rsync -a --exclude="datasets" ../fedyolov7-iov $SLURM_TMPDIR
 
 # Create an empty directory on the compute nodes local storage to receive their respective local dataset
 srun mkdir -p $SLURM_TMPDIR/fedyolov7-iov/datasets/nuimages10
@@ -45,7 +45,7 @@ if [[ $SLURM_PROCID -eq 0 ]]; then
     bash weights/get_pweights.sh yolov7
 fi
 
-# Launch federated learning experiment
+# Launch federated learning experiment (see main.py for more details on the settings)
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 srun --cpus-per-task=$SLURM_CPUS_PER_TASK python main.py \
     --nrounds 30 \
