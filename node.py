@@ -60,7 +60,7 @@ class Node:
     def _symmetric_encryption(self, data_to_encrypt: dict) -> tuple[bytes, bytes, bytes]:
         """Encrypt the checkpoint, weights or update using the node's symmetric key with AES-GCM."""
         serialized_data = pickle.dumps(data_to_encrypt)
-        nonce = secrets.token_bytes(12)  # 96 bits for the nonce as recommended for AES GCM
+        nonce = secrets.token_bytes(12)  # 96-bit for the nonce for AES-GCM
         cipher = Cipher(algorithms.AES(self._symmetric_key), modes.GCM(nonce))
         encryptor = cipher.encryptor()
         encrypted_data = encryptor.update(serialized_data) + encryptor.finalize()
@@ -75,7 +75,7 @@ class Node:
         return pickle.loads(serialized_data)
 
     def _asymmetric_decryption(self, data_to_decrypt: bytes) -> bytes:
-        """Decrypt the symmetric key or nonce using the node's private key with RSA-OAEP."""
+        """Decrypt the symmetric key using the node's private key with RSA-OAEP."""
         data_decrypted = self._private_key.decrypt(
             data_to_decrypt,
             padding.OAEP(
@@ -242,36 +242,26 @@ class Server(Node):
         self._ckpt = torch.load(weights, map_location=self.device)
 
     def get_weights(self, metadata: bool) -> list[tuple[bytes, bytes, bytes]]:
-        """Return the weights encrypted with AES, the tag, and the nonces encrypted with each client's public key."""
+        """Return the weights encrypted with AES, the tag, and the nonce for each client."""
         weights = copy.deepcopy(self._ckpt) if metadata else copy.deepcopy(self._ckpt['model']).half().state_dict()
         encrypted_weights, tag, nonce = self._symmetric_encryption(weights)
         encrypted_data = []
         for client_rank in self.__clients_public_keys.keys():
-            cpk = self.__clients_public_keys[client_rank]
-            nonce_encrypted = cpk.encrypt(
-                nonce,
-                padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                    algorithm=hashes.SHA256(),
-                    label=None
-                )
-            )
-            encrypted_data.append((encrypted_weights, tag, nonce_encrypted))
+            encrypted_data.append((encrypted_weights, tag, nonce))
             print(f'Communication cost server-side for client{client_rank}: '
                   f' - encrypted weights size (metadata={metadata}): {sys.getsizeof(encrypted_weights)}'
-                  f' - encrypted nonce size: {sys.getsizeof(nonce_encrypted)}'
+                  f' - nonce size: {sys.getsizeof(pickle.dumps(nonce))}'
                   f' - tag size: {sys.getsizeof(pickle.dumps(tag))}'
                   f' - total cost of one server to node communication with MPI:'
-                  f' {sys.getsizeof(MPI.pickle.dumps((encrypted_weights, tag, nonce_encrypted)))}')
+                  f' {sys.getsizeof(MPI.pickle.dumps((encrypted_weights, tag, nonce)))}')
         return encrypted_data
 
     def __decrypt_updates(self, sds_encrypted: list[tuple[bytes, bytes, bytes, int]]) -> tuple[list[dict], list[int]]:
-        """Decrypt the encrypted updates with the symmetric key and encrypted nonces with the server's public key."""
+        """Decrypt the encrypted updates with the symmetric key."""
         state_dicts = []
         nsamples_list = []
         for k in range(len(sds_encrypted)):
-            sd_encrypted, tag, nonce_encrypted, nsamples = sds_encrypted[k]
-            nonce = self._asymmetric_decryption(nonce_encrypted)
+            sd_encrypted, tag, nonce, nsamples = sds_encrypted[k]
             state_dict = self._symmetric_decryption(sd_encrypted, tag, nonce)
             state_dicts.append(state_dict)
             nsamples_list.append(nsamples)
@@ -376,28 +366,19 @@ class Client(Node):
         self._symmetric_key = self._asymmetric_decryption(sk_encrypted)
 
     def get_update(self) -> tuple[bytes, bytes, bytes, int]:
-        """Return the encrypted update (AES), tag, encrypted nonce (RSA) and the number of local training examples."""
+        """Return the encrypted update (AES), tag, nonce, and the number of local training examples."""
         encrypted_update, tag, nonce = self._symmetric_encryption(self.__update)
-        nonce_encrypted = self.__server_public_key.encrypt(
-            nonce,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
-            )
-        )
         print(f'Communication cost for client{self.rank}:'
               f' - encrypted update size: {sys.getsizeof(encrypted_update)}'
-              f' - encrypted nonce size: {sys.getsizeof(nonce_encrypted)}'
+              f' - nonce size: {sys.getsizeof(pickle.dumps(nonce))}'
               f' - tag size: {sys.getsizeof(pickle.dumps(tag))}'
               f' - total cost of one node to server communication with MPI:'
-              f' {sys.getsizeof(MPI.pickle.dumps((encrypted_update, tag, nonce_encrypted, self.nsamples)))}')
-        return encrypted_update, tag, nonce_encrypted, self.nsamples
+              f' {sys.getsizeof(MPI.pickle.dumps((encrypted_update, tag, nonce, self.nsamples)))}')
+        return encrypted_update, tag, nonce, self.nsamples
 
     def set_weights(self, encrypted_data: tuple[bytes, bytes, bytes], metadata: bool) -> None:
-        """Decrypt the nonce with the private key, then the weights or checkpoint with the symmetric key and save it."""
-        new_weights_encrypted, tag, nonce_encrypted = encrypted_data
-        nonce = self._asymmetric_decryption(nonce_encrypted)
+        """Decrypt the weights or checkpoint with the symmetric key and save it."""
+        new_weights_encrypted, tag, nonce = encrypted_data
         new_weights = self._symmetric_decryption(new_weights_encrypted, tag, nonce)
         if metadata:
             self._ckpt = new_weights
