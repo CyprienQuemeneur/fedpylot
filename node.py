@@ -250,8 +250,6 @@ class Server(Node):
             encrypted_data.append((encrypted_weights, tag, nonce))
             print(f'Communication cost server-side for client{client_rank}: '
                   f' - encrypted weights size (metadata={metadata}): {sys.getsizeof(encrypted_weights)}'
-                  f' - nonce size: {sys.getsizeof(pickle.dumps(nonce))}'
-                  f' - tag size: {sys.getsizeof(pickle.dumps(tag))}'
                   f' - total cost of one server to node communication with MPI:'
                   f' {sys.getsizeof(MPI.pickle.dumps((encrypted_weights, tag, nonce)))}')
         return encrypted_data
@@ -370,8 +368,6 @@ class Client(Node):
         encrypted_update, tag, nonce = self._symmetric_encryption(self.__update)
         print(f'Communication cost for client{self.rank}:'
               f' - encrypted update size: {sys.getsizeof(encrypted_update)}'
-              f' - nonce size: {sys.getsizeof(pickle.dumps(nonce))}'
-              f' - tag size: {sys.getsizeof(pickle.dumps(tag))}'
               f' - total cost of one node to server communication with MPI:'
               f' {sys.getsizeof(MPI.pickle.dumps((encrypted_update, tag, nonce, self.nsamples)))}')
         return encrypted_update, tag, nonce, self.nsamples
