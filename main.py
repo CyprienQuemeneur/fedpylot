@@ -66,7 +66,7 @@ def federated_loop(node: Node, nrounds: int, epochs: int, saving_path: str, arch
     for kround in range(nrounds):
         # At the beginning of a round, generate and share a new symmetric key
         share_symmetric_key(node)
-        # If it is the first round, the central server sends the initial checkpoints to the clients
+        # If it is the first round, the central server sends the initial checkpoint to the clients
         if kround == 0:
             initial_broadcast(node, pretrained_weights, data, cfg, hyp, imgsz)
         # Client level computation (local training)
@@ -77,7 +77,7 @@ def federated_loop(node: Node, nrounds: int, epochs: int, saving_path: str, arch
             sd_encrypted = None
         # Updates are gathered by the central server
         sd_encrypted = comm.gather(sd_encrypted, root=0)
-        # Server level computation (server optimization, reparameterization, and evaluation on the validation set)
+        # Server level computation (server optimization, re-parameterization, and evaluation on the validation set)
         if node.rank == 0:
             sd_encrypted.pop(0)
             node.aggregate(sd_encrypted)
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument('--server-opt', type=str, default='fedavg', help='aggregation algorithm/server-side optimizer')
     parser.add_argument('--server-lr', type=float, default=1., help='server-side learning rate')
     parser.add_argument('--tau', type=float, default=1e-3, help='server-side adaptivity level with FedAdam')
-    parser.add_argument('--beta', type=float, default=0.7, help='server-side momentum with FedAvgM')
+    parser.add_argument('--beta', type=float, default=0.1, help='server-side momentum with FedAvgM')
     parser.add_argument('--architecture', type=str, default='yolov7', help='model architecture')
     parser.add_argument('--weights', type=str, help='path to pretrained weights')
     parser.add_argument('--data', type=str, help='*.data path')
@@ -163,7 +163,7 @@ if __name__ == "__main__":
             f.write(f'server opt: {args.server_opt}\n')
             f.write(f'server learning rate: {args.server_lr}\n')
             if args.server_opt == 'fedadam':
-                f.write(f'fedadam - tau (adaptivity): {args.tau}\n')
+                f.write(f'fedadam - tau: {args.tau}\n')
                 f.write(f'fedadam - beta1: {0.9}\n')
                 f.write(f'fedadam - beta2: {0.99}\n')
             if args.server_opt == 'fedavgm':

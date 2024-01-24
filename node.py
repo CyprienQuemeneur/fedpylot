@@ -210,7 +210,7 @@ class Server(Node):
 
     @clients_public_keys.setter
     def clients_public_keys(self, serialized_keys: dict) -> None:
-        """Unserialize the public keys of the clients and store them in a dictionary."""
+        """Un-serialize the public keys of the clients and store them in a dictionary."""
         self.__clients_public_keys = {r: load_pem_public_key(serialized_keys[r]) for r in serialized_keys.keys()}
 
     def generate_symmetric_key(self) -> None:
@@ -349,7 +349,7 @@ class Client(Node):
 
     @server_public_key.setter
     def server_public_key(self, serialized_key: bytes) -> None:
-        """Unserialize the public key of the server and store it."""
+        """Un-serialize the public key of the server and store it."""
         self.__server_public_key = load_pem_public_key(serialized_key)
 
     @property
@@ -422,5 +422,5 @@ class Client(Node):
         for key in delta_it.keys():
             delta_it[key] = w_t[key] - w_it[key]
         self.__update = delta_it
-        # Save the new checkpoint to maintain the scheduler across communication rounds
+        # Maintain state across communication rounds (required for FedOpt)
         self._ckpt = new_ckpt

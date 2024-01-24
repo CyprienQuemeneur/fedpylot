@@ -218,12 +218,12 @@ def test(data,
             stats.append((correct.cpu(), pred[:, 4].cpu(), pred[:, 5].cpu(), tcls))
 
         # Plot images
-        if plots and batch_i < 30:
-            nplot = [name.split('.')[-1] for name in list(names.values())]  # only last subclass to improve readanility
+        if plots and batch_i < 3:
+            nplot = [name.split('.')[-1] for name in list(names.values())]  # only last subclass to improve readability
             f = save_dir / f'test_batch{batch_i}_labels.jpg'  # labels
-            Thread(target=plot_images, args=(img, targets, paths, f, nplot, 640, 4), daemon=True).start()
+            Thread(target=plot_images, args=(img, targets, paths, f, nplot), daemon=True).start()
             f = save_dir / f'test_batch{batch_i}_pred.jpg'  # predictions
-            Thread(target=plot_images, args=(img, output_to_target(out), paths, f, nplot, 640, 4), daemon=True).start()
+            Thread(target=plot_images, args=(img, output_to_target(out), paths, f, nplot), daemon=True).start()
 
     # Compute statistics
     stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
@@ -251,7 +251,7 @@ def test(data,
 
     # Plots
     if plots:
-        nplot = [name.split('.')[-1] for name in list(names.values())]  # only last subclass to improve readanility
+        nplot = [name.split('.')[-1] for name in list(names.values())]  # only last subclass to improve readability
         confusion_matrix.plot(save_dir=save_dir, names=nplot)
         if wandb_logger and wandb_logger.wandb:
             val_batches = [wandb_logger.wandb.Image(str(f), caption=f.name) for f in sorted(save_dir.glob('test*.jpg'))]

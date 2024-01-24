@@ -34,14 +34,13 @@ Third-Party Component: Official YOLOv7
      - Fixed an issue where "nesterov" was set to True in SGD even when the momentum was set to 0
      - The "notest" parameter now deactivates all testing-related code, even for the final epoch
      - The number of warm-up iterations is no longer set to a minimum of 1000 to allow training with FedAvg
-     - Record the learning rates, momenta, losses, and results in csv files
+     - Record the learning rates, moment, losses, and results in csv files
      - Interrupt the training subprocess at the end of each communication round in the federated experiments
      - Add "client-rank" and "round-length" parameters to the argparser
    - Modifications to yolov7/test.py
      - Add pandas and utils.loss.ComputeLoss imports
      - Modify the validation path collected from the data file at runtime
      - Record the validation loss when the model is not traced
-     - Plot more but smaller batches of images
      - Only retain the subclass name to improve readability with nuImages in the image plots and the confusion matrix
      - Modify the spacing when printing the results table to improve readability with nuImages
      - Add "saving-path" and "kround" parameters to the argparser
