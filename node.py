@@ -87,10 +87,7 @@ class Node:
         return data_decrypted
 
     def reparameterize(self, architecture: str = 'yolov7') -> None:
-        """Reduce trainable Bag of Freebies modules into deploy model for faster inference.
-
-        Code mostly taken from yolov7/tools/reparameterization.ipynb, GPL-3.0 license.
-        """
+        """Reduce trainable Bag of Freebies modules into deploy model for faster inference."""
         ckpt = copy.deepcopy(self._ckpt)
         backup_hyp = ckpt['model'].hyp
         backup_gr = ckpt['model'].gr
@@ -133,10 +130,7 @@ class Node:
                               'epoch': -1}
 
     def post_init_update(self, data: str, cfg: str, hyp: str, imgsz: int) -> None:
-        """Post-initialization update of the model to match the training loop model.
-
-        Code mostly taken from yolov7/train.py, GPL-3.0 license.
-        """
+        """Post-initialization update of the model to match the training loop model."""
         ckpt = copy.deepcopy(self._ckpt)  # load checkpoint
         with open(data) as f:
             data_dict = yaml.load(f, Loader=yaml.SafeLoader)
@@ -161,7 +155,7 @@ class Node:
         model.names = data_dict['names']  # attach class names to model
         self._ckpt['model'] = model
 
-    def evaluate(self, kround: int, saving_path: str, data: str, bsz: int, imgsz: int, conf: float, iou: float) -> None:
+    def test(self, kround: int, saving_path: str, data: str, bsz: int, imgsz: int, conf: float, iou: float) -> None:
         """Evaluate the model on the validation set held by the node."""
         weights = f'{saving_path}/weights/eval-kround{kround}.pt'
         torch.save(self._ckpt_reparam, weights)
@@ -277,21 +271,21 @@ class Server(Node):
         return delta_t
 
     def __fedavg(self, delta_t: dict) -> dict:
-        """Compute the new weights using the FedAvg algorithm (sopt is SGD, default lr is 1)."""
+        """Compute the new weights using the FedAvg algorithm (server opt is SGD, default lr is 1)."""
         w_t = copy.deepcopy(self._ckpt['model'].state_dict())
         for key in w_t.keys():
             w_t[key] = w_t[key] - self.server_lr * delta_t[key]  # SGD with pseudo-gradient
         return w_t
 
-    def _fedavgm(self, delta_t: dict) -> dict:
-        """Compute the new weights using the FedAvgM algorithm (sopt is SGD with momentum, default lr is 1)."""
+    def __fedavgm(self, delta_t: dict) -> dict:
+        """Compute the new weights using the FedAvgM algorithm (server opt is SGD with momentum, default lr is 1)."""
         w_t = copy.deepcopy(self._ckpt['model'].state_dict())
         self.v_t = {key: self.beta * self.v_t[key] + delta_t[key] for key in delta_t.keys()}
         w_t = {key: w_t[key] - self.server_lr * self.v_t[key] for key in delta_t.keys()}
         return w_t
 
     def __fedadam(self, delta_t):
-        """Compute the new weights using the FedAdam algorithm (sopt is Adam with default decay parameters)."""
+        """Compute the new weights using the FedAdam algorithm (server opt is Adam with default decay parameters)."""
         w_t = copy.deepcopy(self._ckpt['model'].state_dict())
         self.m_t = {
             key: self.beta1 * self.m_t[key] + (1. - self.beta1) * delta_t[key]
@@ -322,7 +316,7 @@ class Server(Node):
         elif self.server_opt == 'fedavgm':
             if self.v_t is None:
                 self.v_t = {key: torch.zeros_like(delta_t[key]) for key in delta_t.keys()}
-            new_sd = self._fedavgm(delta_t)
+            new_sd = self.__fedavgm(delta_t)
         else:
             raise ValueError('Server optimizer not recognized, must be fedavg, fedavgm, or fedadam')
         model = self._ckpt['model']

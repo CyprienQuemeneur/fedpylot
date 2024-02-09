@@ -10,6 +10,7 @@
 **/nuimages10
 **/nuimages23
 **/experiments
+!media/*.png
 !requirements.txt
 !yolov7/figure/*.jpg
 !yolov7/figure/*.png

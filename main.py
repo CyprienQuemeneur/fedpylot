@@ -82,7 +82,7 @@ def federated_loop(node: Node, nrounds: int, epochs: int, saving_path: str, arch
             sd_encrypted.pop(0)
             node.aggregate(sd_encrypted)
             node.reparameterize(architecture)
-            node.evaluate(kround, saving_path, data, bsz_val, imgsz, conf_thres, iou_thres)
+            node.test(kround, saving_path, data, bsz_val, imgsz, conf_thres, iou_thres)
             sd_encrypted = [None] + node.get_weights(metadata=False)
         else:
             sd_encrypted = None

@@ -52,7 +52,7 @@ srun --cpus-per-task=$SLURM_CPUS_PER_TASK python main.py \
     --epochs 5 \
     --server-opt fedavgm \
     --server-lr 1.0 \
-    --beta 0.5 \
+    --beta 0.1 \
     --architecture yolov7 \
     --weights weights/pretrained/yolov7_training.pt \
     --data data/nuimages10.yaml \
