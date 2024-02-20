@@ -20,33 +20,37 @@ please contact [cyprien.quemeneur@polymtl.ca](mailto:cyprien.quemeneur@polymtl.c
 
                 THIRD-PARTY COMPONENTS
 
-This project includes third-party code, redistributed under the GNU General Public License 3.0 (GPL-3.0).
+This program includes third-party code, redistributed under the GNU General Public License 3.0 (GPL-3.0).
 
 Third-Party Component: Official YOLOv7
-   - License: GNU General Public License 3.0
-   - Source: https://github.com/WongKinYiu/yolov7
-   - Latest commit: a207844 on 2023-11-03 (main branch)
+  * License: GNU General Public License 3.0
+  * Source: https://github.com/WongKinYiu/yolov7
+  * Latest commit: a207844 on 2023-11-03 (main branch)
 
-   Modifications to the original repository made by Cyprien Quéméneur:
-   - Modifications to yolov7/train.py
-     - Add sys and pandas imports
-     - Modify the training and validation paths collected from the data file at runtime based on the client rank
-     - Fixed an issue where "nesterov" was set to True in SGD even when the momentum was set to 0
-     - The "notest" parameter now deactivates all testing-related code, even for the final epoch
-     - The number of warm-up iterations is no longer set to a minimum of 1000 to allow training with FedAvg
-     - Record the learning rates, moment, losses, and results in csv files
-     - Interrupt the training subprocess at the end of each communication round in the federated experiments
-     - Add "client-rank" and "round-length" parameters to the argparser
-   - Modifications to yolov7/test.py
-     - Add pandas and utils.loss.ComputeLoss imports
-     - Modify the validation path collected from the data file at runtime
-     - Record the validation loss when the model is not traced
-     - Only retain the subclass name to improve readability with nuImages in the image plots and the confusion matrix
-     - Modify the spacing when printing the results table to improve readability with nuImages
-     - Add "saving-path" and "kround" parameters to the argparser
-     - Save testing results in a csv file
-   - The .gitignore file was removed
+- Modifications to the original repository
+  - Modifications to yolov7/train.py and yolov7/train_aux.py
+    - Add sys and pandas imports
+    - Modify the training and validation paths collected from the dataset yaml file at runtime based on the client rank
+    - Fixed an issue where "nesterov" was set to True in SGD even when the momentum was set to 0
+    - The "notest" parameter now deactivates all testing-related code, even for the final epoch
+    - The number of warm-up iterations is no longer set to a minimum of 1000 to allow training with FedAvg
+    - Record the learning rates, moment, losses, and results in csv files
+    - Interrupt the training subprocess at the end of each communication round in the federated experiments
+    - Add "client-rank" and "round-length" parameters to the argparser
+  - Modifications to yolov7/test.py
+    - Add pandas and utils.loss.ComputeLoss imports
+    - Modify the validation path collected from the data file at runtime
+    - Record the validation loss when the model is not traced
+    - Only retain the subclass name to improve readability with nuImages in the image plots and the confusion matrix
+    - Modify the spacing when printing the results table to improve readability with nuImages
+    - Add "saving-path" and "kround" parameters to the argparser
+    - Save testing results in a csv file
+  - Other modifications
+    - The .gitignore file was moved to the program's root
+    - Fixed a SyntaxError in YOLOv7-E6E re-parameterization in yolov7/tools/reparameterization.ipynb
+    - Fixed a device issue in ComputeLossAuxOTA in yolov7/utils/loss.py which prevented training of P6 models
+    - Deactivated TensorBoard recording in yolov7/train.py and yolov7/train_aux.py
    
-   Additionally, the module node.py contains modified code taken from YOLOv7
-   - The function reparameterize is based on yolov7/tools/reparameterization.ipynb for YOLOv7 and YOLOv7x
-   - The function post_init_update is based on the "Model" and "Model parameters" sections found in yolov7/train.py
+- Additionally, the module node.py contains modified code taken from YOLOv7
+  - The function reparameterize is based on yolov7/tools/reparameterization.ipynb
+  - The function post_init_update is based on the "Model" and "Model parameters" sections of YOLOv7 training scripts

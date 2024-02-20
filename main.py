@@ -17,8 +17,8 @@ from node import Client, Node, Server
 
 def init_node(rank: int, server_opt: str, server_lr: float, tau: float, beta: float) -> Node:
     """Initialize a node (client or server) based on its rank."""
-    if server_opt not in ['fedavg', 'fedadam', 'fedavgm']:
-        raise NotImplementedError(f'Aggregation algorithm {server_opt} not implemented.')
+    if server_opt not in ['fedavg', 'fedavgm', 'fedadam']:
+        raise ValueError(f'Aggregation algorithm {server_opt} not recognized, must be fedavg, fedavgm, or fedadam.')
     return Server(server_opt, server_lr, tau, beta) if rank == 0 else Client(rank)
 
 
@@ -71,7 +71,7 @@ def federated_loop(node: Node, nrounds: int, epochs: int, saving_path: str, arch
             initial_broadcast(node, pretrained_weights, data, cfg, hyp, imgsz)
         # Client level computation (local training)
         if node.rank != 0:
-            node.train(nrounds, kround, epochs, data, bsz_train, imgsz, cfg, hyp, workers, saving_path)
+            node.train(nrounds, kround, epochs, architecture, data, bsz_train, imgsz, cfg, hyp, workers, saving_path)
             sd_encrypted = node.get_update()
         else:
             sd_encrypted = None

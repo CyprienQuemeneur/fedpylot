@@ -22,7 +22,7 @@ from utils.torch_utils import intersect_dicts, is_parallel, select_device
 
 
 class Node:
-    """General node logic common between the server and clients. Evaluation performed here to allow personalized FL."""
+    """General node logic common to the server and clients. Evaluation is performed here to allow personalized FL."""
 
     def __init__(self, rank: int) -> None:
         """Initialize the node with its rank, device, public and private keys, and symmetric key password."""
@@ -92,12 +92,8 @@ class Node:
         backup_hyp = ckpt['model'].hyp
         backup_gr = ckpt['model'].gr
         nc = ckpt['model'].nc
-        if architecture == 'yolov7':
-            deploy_path = 'yolov7/cfg/deploy/yolov7.yaml'
-        elif architecture == 'yolov7x':
-            deploy_path = 'yolov7/cfg/deploy/yolov7x.yaml'
-        else:
-            raise ValueError('Model architecture not recognized, must be yolov7 or yolov7x')
+        deploy_path = f'yolov7/cfg/deploy/{architecture}.yaml'
+        id_mp = {'yolov7': 105, 'yolov7x': 121, 'yolov7-w6': 118, 'yolov7-e6': 140, 'yolov7-d6': 162, 'yolov7-e6e': 261}
         model = Model(deploy_path, ch=3, nc=nc).to(self.device)
         with open(deploy_path) as f:
             yml = yaml.load(f, Loader=yaml.SafeLoader)
@@ -110,18 +106,53 @@ class Node:
         model.load_state_dict(intersect_state_dict, strict=False)
         model.names = ckpt['model'].names
         model.nc = ckpt['model'].nc
-        l = 105 if architecture == 'yolov7' else 121
-        for i in range((model.nc + 5) * anchors):
-            model.state_dict()[f'model.{l}.m.0.weight'].data[i, :, :, :] *= sd[f'model.{l}.im.0.implicit'].data[:, i, ::].squeeze()
-            model.state_dict()[f'model.{l}.m.1.weight'].data[i, :, :, :] *= sd[f'model.{l}.im.1.implicit'].data[:, i, ::].squeeze()
-            model.state_dict()[f'model.{l}.m.2.weight'].data[i, :, :, :] *= sd[f'model.{l}.im.2.implicit'].data[:, i, ::].squeeze()
-        model.state_dict()[f'model.{l}.m.0.bias'].data += sd[f'model.{l}.m.0.weight'].mul(sd[f'model.{l}.ia.0.implicit']).sum(1).squeeze()
-        model.state_dict()[f'model.{l}.m.1.bias'].data += sd[f'model.{l}.m.1.weight'].mul(sd[f'model.{l}.ia.1.implicit']).sum(1).squeeze()
-        model.state_dict()[f'model.{l}.m.2.bias'].data += sd[f'model.{l}.m.2.weight'].mul(sd[f'model.{l}.ia.2.implicit']).sum(1).squeeze()
-        model.state_dict()[f'model.{l}.m.0.bias'].data *= sd[f'model.{l}.im.0.implicit'].data.squeeze()
-        model.state_dict()[f'model.{l}.m.1.bias'].data *= sd[f'model.{l}.im.1.implicit'].data.squeeze()
-        model.state_dict()[f'model.{l}.m.2.bias'].data *= sd[f'model.{l}.im.2.implicit'].data.squeeze()
-        # model to be saved
+        if architecture in ['yolov7', 'yolov7x']:
+            # Re-parameterization of P5 models
+            idx = id_mp[architecture]
+            for i in range((model.nc + 5) * anchors):
+                model.state_dict()[f'model.{idx}.m.0.weight'].data[i, :, :, :] *= sd[f'model.{idx}.im.0.implicit'].data[:, i, ::].squeeze()
+                model.state_dict()[f'model.{idx}.m.1.weight'].data[i, :, :, :] *= sd[f'model.{idx}.im.1.implicit'].data[:, i, ::].squeeze()
+                model.state_dict()[f'model.{idx}.m.2.weight'].data[i, :, :, :] *= sd[f'model.{idx}.im.2.implicit'].data[:, i, ::].squeeze()
+            model.state_dict()[f'model.{idx}.m.0.bias'].data += sd[f'model.{idx}.m.0.weight'].mul(sd[f'model.{idx}.ia.0.implicit']).sum(1).squeeze()
+            model.state_dict()[f'model.{idx}.m.1.bias'].data += sd[f'model.{idx}.m.1.weight'].mul(sd[f'model.{idx}.ia.1.implicit']).sum(1).squeeze()
+            model.state_dict()[f'model.{idx}.m.2.bias'].data += sd[f'model.{idx}.m.2.weight'].mul(sd[f'model.{idx}.ia.2.implicit']).sum(1).squeeze()
+            model.state_dict()[f'model.{idx}.m.0.bias'].data *= sd[f'model.{idx}.im.0.implicit'].data.squeeze()
+            model.state_dict()[f'model.{idx}.m.1.bias'].data *= sd[f'model.{idx}.im.1.implicit'].data.squeeze()
+            model.state_dict()[f'model.{idx}.m.2.bias'].data *= sd[f'model.{idx}.im.2.implicit'].data.squeeze()
+        else:
+            # Re-parameterization of P6 models
+            idx = id_mp[architecture]
+            idx2 = idx + 4
+            model.state_dict()[f'model.{idx}.m.0.weight'].data -= model.state_dict()[f'model.{idx}.m.0.weight'].data
+            model.state_dict()[f'model.{idx}.m.1.weight'].data -= model.state_dict()[f'model.{idx}.m.1.weight'].data
+            model.state_dict()[f'model.{idx}.m.2.weight'].data -= model.state_dict()[f'model.{idx}.m.2.weight'].data
+            model.state_dict()[f'model.{idx}.m.3.weight'].data -= model.state_dict()[f'model.{idx}.m.3.weight'].data
+            model.state_dict()[f'model.{idx}.m.0.weight'].data += sd[f'model.{idx2}.m.0.weight'].data
+            model.state_dict()[f'model.{idx}.m.1.weight'].data += sd[f'model.{idx2}.m.1.weight'].data
+            model.state_dict()[f'model.{idx}.m.2.weight'].data += sd[f'model.{idx2}.m.2.weight'].data
+            model.state_dict()[f'model.{idx}.m.3.weight'].data += sd[f'model.{idx2}.m.3.weight'].data
+            model.state_dict()[f'model.{idx}.m.0.bias'].data -= model.state_dict()[f'model.{idx}.m.0.bias'].data
+            model.state_dict()[f'model.{idx}.m.1.bias'].data -= model.state_dict()[f'model.{idx}.m.1.bias'].data
+            model.state_dict()[f'model.{idx}.m.2.bias'].data -= model.state_dict()[f'model.{idx}.m.2.bias'].data
+            model.state_dict()[f'model.{idx}.m.3.bias'].data -= model.state_dict()[f'model.{idx}.m.3.bias'].data
+            model.state_dict()[f'model.{idx}.m.0.bias'].data += sd[f'model.{idx2}.m.0.bias'].data
+            model.state_dict()[f'model.{idx}.m.1.bias'].data += sd[f'model.{idx2}.m.1.bias'].data
+            model.state_dict()[f'model.{idx}.m.2.bias'].data += sd[f'model.{idx2}.m.2.bias'].data
+            model.state_dict()[f'model.{idx}.m.3.bias'].data += sd[f'model.{idx2}.m.3.bias'].data
+            for i in range((model.nc + 5) * anchors):
+                model.state_dict()[f'model.{idx}.m.0.weight'].data[i, :, :, :] *= sd[f'model.{idx2}.im.0.implicit'].data[:, i, : :].squeeze()
+                model.state_dict()[f'model.{idx}.m.1.weight'].data[i, :, :, :] *= sd[f'model.{idx2}.im.1.implicit'].data[:, i, : :].squeeze()
+                model.state_dict()[f'model.{idx}.m.2.weight'].data[i, :, :, :] *= sd[f'model.{idx2}.im.2.implicit'].data[:, i, : :].squeeze()
+                model.state_dict()[f'model.{idx}.m.3.weight'].data[i, :, :, :] *= sd[f'model.{idx2}.im.3.implicit'].data[:, i, : :].squeeze()
+            model.state_dict()[f'model.{idx}.m.0.bias'].data += sd[f'model.{idx2}.m.0.weight'].mul(sd[f'model.{idx2}.ia.0.implicit']).sum(1).squeeze()
+            model.state_dict()[f'model.{idx}.m.1.bias'].data += sd[f'model.{idx2}.m.1.weight'].mul(sd[f'model.{idx2}.ia.1.implicit']).sum(1).squeeze()
+            model.state_dict()[f'model.{idx}.m.2.bias'].data += sd[f'model.{idx2}.m.2.weight'].mul(sd[f'model.{idx2}.ia.2.implicit']).sum(1).squeeze()
+            model.state_dict()[f'model.{idx}.m.3.bias'].data += sd[f'model.{idx2}.m.3.weight'].mul(sd[f'model.{idx2}.ia.3.implicit']).sum(1).squeeze()
+            model.state_dict()[f'model.{idx}.m.0.bias'].data *= sd[f'model.{idx2}.im.0.implicit'].data.squeeze()
+            model.state_dict()[f'model.{idx}.m.1.bias'].data *= sd[f'model.{idx2}.im.1.implicit'].data.squeeze()
+            model.state_dict()[f'model.{idx}.m.2.bias'].data *= sd[f'model.{idx2}.im.2.implicit'].data.squeeze()
+            model.state_dict()[f'model.{idx}.m.3.bias'].data *= sd[f'model.{idx2}.im.3.implicit'].data.squeeze()
+        # Saving re-parameterized model
         model.hyp = backup_hyp
         model.gr = backup_gr
         self._ckpt_reparam = {'model': copy.deepcopy(model.module if is_parallel(model) else model).half(),
@@ -185,16 +216,16 @@ class Server(Node):
         self.server_opt = server_opt
         self.server_lr = serverlr
         self.__clients_public_keys = None
+        # FedAvgM additional parameters
+        if self.server_opt == 'fedavgm':
+            self.beta = beta
+            self.v_t = None
         # FedAdam additional parameters
         if self.server_opt == 'fedadam':
             self.beta1 = 0.9
             self.beta2 = 0.99
             self.tau = tau
             self.m_t = None
-            self.v_t = None
-        # FedAvgM additional parameters
-        if self.server_opt == 'fedavgm':
-            self.beta = beta
             self.v_t = None
 
     @property
@@ -377,16 +408,22 @@ class Client(Node):
             model.load_state_dict(new_weights)
             self._ckpt['model'] = model
 
-    def train(self, nrounds: int, kround: int, epochs: int, data: str, bsz_train: int, imgsz: int, cfg: str, hyp: str,
-              workers: int, saving_path: str) -> None:
+    def train(self, nrounds: int, kround: int, epochs: int, architecture: str, data: str, bsz_train: int, imgsz: int,
+              cfg: str, hyp: str, workers: int, saving_path: str) -> None:
         """Train the model on the local training set and store the new checkpoint and update."""
         end_weights = f'{saving_path}/run/train-client{self.rank}/weights/last.pt'
+        if architecture in ['yolov7', 'yolov7x']:
+            script_path = './yolov7/train.py'
+        elif architecture in ['yolov7-w6', 'yolov7-e6', 'yolov7-d6', 'yolov7-e6e']:
+            script_path = './yolov7/train_aux.py'
+        else:
+            raise ValueError(f'Model architecture {architecture} not recognized.')
         if kround == 0:
             # Initialize the training loop and perform the first round of training
             begin_weights = f'{saving_path}/weights/train-kround{kround}-client{self.rank}.pt'
             torch.save(self._ckpt, begin_weights)
             os.system(
-                f'python ./yolov7/train.py'
+                f'python {script_path}'
                 f' --client-rank {self.rank}'
                 f' --round-length {epochs}'
                 f' --batch-size {bsz_train}'
@@ -405,7 +442,7 @@ class Client(Node):
             # Resume training with the new set of weights
             begin_weights = f'{saving_path}/run/train-client{self.rank}/weights/last.pt'
             torch.save(self._ckpt, begin_weights)
-            os.system(f'python ./yolov7/train.py --resume {begin_weights}')
+            os.system(f'python {script_path} --resume {begin_weights}')
         new_ckpt = torch.load(end_weights, map_location=self.device)
         # Compute the local update: delta_it = w_t - w_it
         w_it = new_ckpt['model'].state_dict()

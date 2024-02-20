@@ -3,12 +3,14 @@ import logging
 import math
 import os
 import random
+import sys
 import time
 from copy import deepcopy
 from pathlib import Path
 from threading import Thread
 
 import numpy as np
+import pandas as pd
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
@@ -95,8 +97,8 @@ def train(hyp, opt, device, tb_writer=None):
         model = Model(opt.cfg, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)  # create
     with torch_distributed_zero_first(rank):
         check_dataset(data_dict)  # check
-    train_path = data_dict['train']
-    test_path = data_dict['val']
+    train_path = data_dict['train'] + f'/client{opt.client_rank}/images'
+    test_path = data_dict['val'] + '/server/images'
 
     # Freeze
     freeze = []  # parameter names to freeze (full or partial)
@@ -180,7 +182,7 @@ def train(hyp, opt, device, tb_writer=None):
     if opt.adam:
         optimizer = optim.Adam(pg0, lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
     else:
-        optimizer = optim.SGD(pg0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
+        optimizer = optim.SGD(pg0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=hyp['momentum'] != 0.)
 
     optimizer.add_param_group({'params': pg1, 'weight_decay': hyp['weight_decay']})  # add pg1 with weight_decay
     optimizer.add_param_group({'params': pg2})  # add pg2 (biases)
@@ -252,10 +254,11 @@ def train(hyp, opt, device, tb_writer=None):
 
     # Process 0
     if rank in [-1, 0]:
-        testloader = create_dataloader(test_path, imgsz_test, batch_size * 2, gs, opt,  # testloader
-                                       hyp=hyp, cache=opt.cache_images and not opt.notest, rect=True, rank=-1,
-                                       world_size=opt.world_size, workers=opt.workers,
-                                       pad=0.5, prefix=colorstr('val: '))[0]
+        if not opt.notest:
+            testloader = create_dataloader(test_path, imgsz_test, batch_size * 2, gs, opt,  # testloader
+                                           hyp=hyp, cache=opt.cache_images and not opt.notest, rect=True, rank=-1,
+                                           world_size=opt.world_size, workers=opt.workers,
+                                           pad=0.5, prefix=colorstr('val: '))[0]
 
         if not opt.resume:
             labels = np.concatenate(dataset.labels, 0)
@@ -265,7 +268,7 @@ def train(hyp, opt, device, tb_writer=None):
             if plots:
                 #plot_labels(labels, names, save_dir, loggers)
                 if tb_writer:
-                    tb_writer.add_histogram('classes', c, 0)
+                    tb_writer.add_histogram('classes', c, 0)  # may encounter an issue with newer versions of numpy
 
             # Anchors
             if not opt.noautoanchor:
@@ -291,7 +294,7 @@ def train(hyp, opt, device, tb_writer=None):
 
     # Start training
     t0 = time.time()
-    nw = max(round(hyp['warmup_epochs'] * nb), 1000)  # number of warmup iterations, max(3 epochs, 1k iterations)
+    nw = round(hyp['warmup_epochs'] * nb)  # number of warmup iterations, max(3 epochs, 1k iterations)
     # nw = min(nw, (epochs - start_epoch) / 2 * nb)  # limit warmup to < 1/2 of training
     maps = np.zeros(nc)  # mAP per class
     results = (0, 0, 0, 0, 0, 0, 0)  # P, R, mAP@.5, mAP@.5-.95, val_loss(box, obj, cls)
@@ -400,6 +403,22 @@ def train(hyp, opt, device, tb_writer=None):
 
         # Scheduler
         lr = [x['lr'] for x in optimizer.param_groups]  # for tensorboard
+        momenta = [x['momentum'] for x in optimizer.param_groups]
+        if os.path.exists(f'{save_dir}/optim_params.csv'):
+            df_lr = pd.read_csv(f'{save_dir}/optim_params.csv')
+        else:
+            df_lr = pd.DataFrame({'epoch': [], 'lr0': [], 'lr1': [], 'lr2': [], 'm0': [], 'm1': [], 'm2': []})
+        df_update_lr = pd.DataFrame({
+            'epoch': epoch,
+            'lr0': lr[0],
+            'lr1': lr[1],
+            'lr2': lr[2],
+            'm0': momenta[0],
+            'm1': momenta[1],
+            'm2': momenta[2]
+        }, index=[epoch])
+        df_lr = pd.concat([df_lr, df_update_lr])
+        df_lr.to_csv(f'{save_dir}/optim_params.csv', index=False)
         scheduler.step()
 
         # DDP process 0 or single-GPU
@@ -407,8 +426,9 @@ def train(hyp, opt, device, tb_writer=None):
             # mAP
             ema.update_attr(model, include=['yaml', 'nc', 'hyp', 'gr', 'names', 'stride', 'class_weights'])
             final_epoch = epoch + 1 == epochs
-            if not opt.notest or final_epoch:  # Calculate mAP
+            if not opt.notest:  # Calculate mAP
                 wandb_logger.current_epoch = epoch + 1
+                # Evaluation for centralized training
                 results, maps, times = test.test(data_dict,
                                                  batch_size=batch_size * 2,
                                                  imgsz=imgsz_test,
@@ -422,6 +442,25 @@ def train(hyp, opt, device, tb_writer=None):
                                                  compute_loss=compute_loss,
                                                  is_coco=is_coco,
                                                  v5_metric=opt.v5_metric)
+                # Write as csv
+                df_res = pd.DataFrame({
+                    'epoch': epoch,
+                    'batch avg time (ms)': times[0],
+                    'nms (ms)': times[1],
+                    'total (ms)': times[2],
+                    'mP': results[0],
+                    'mR': results[1],
+                    'mAP@.5': results[2],
+                    'mAP@.5:.95': results[3],
+                    'val/box_loss': results[4],
+                    'val/obj_loss': results[5],
+                    'val/cls_loss': results[6],
+                    'val/total_loss': results[4] + results[5] + results[6]
+                }, index=[epoch])
+                if epoch != 0:
+                    df_previous = pd.read_csv(f'{save_dir}/train_results.csv')
+                    df_res = pd.concat([df_previous, df_res])
+                df_res.to_csv(f'{save_dir}/train_results.csv', index=False)
 
             # Write
             with open(results_file, 'a') as f:
@@ -434,6 +473,22 @@ def train(hyp, opt, device, tb_writer=None):
                     'metrics/precision', 'metrics/recall', 'metrics/mAP_0.5', 'metrics/mAP_0.5:0.95',
                     'val/box_loss', 'val/obj_loss', 'val/cls_loss',  # val loss
                     'x/lr0', 'x/lr1', 'x/lr2']  # params
+
+            if os.path.exists(f'{save_dir}/training_losses.csv'):
+                df_losses = pd.read_csv(f'{save_dir}/training_losses.csv')
+            else:
+                df_losses = pd.DataFrame({'epoch': [], 'train/box_loss': [], 'train/obj_loss': [], 'train/cls_loss': [], 'train/total_loss': []})
+            losses = mloss.cpu().tolist()
+            df_update_losses = pd.DataFrame({
+                'epoch': epoch,
+                'train/box_loss': losses[0],
+                'train/obj_loss': losses[1],
+                'train/cls_loss': losses[2],
+                'train/total_loss': losses[3]
+            }, index=[epoch])
+            df_losses = pd.concat([df_losses, df_update_losses])
+            df_losses.to_csv(f'{save_dir}/training_losses.csv', index=False)
+
             for x, tag in zip(list(mloss[:-1]) + list(results) + lr, tags):
                 if tb_writer:
                     tb_writer.add_scalar(tag, x, epoch)  # tensorboard
@@ -476,6 +531,10 @@ def train(hyp, opt, device, tb_writer=None):
                 del ckpt
 
         # end epoch ----------------------------------------------------------------------------------------------------
+        if opt.round_length is not None and (epoch + 1) % opt.round_length == 0:
+            print(f'Client {opt.client_rank} exiting training at the end of epoch {epoch}')
+            sys.exit()
+
     # end training
     if rank in [-1, 0]:
         # Plots
@@ -523,6 +582,8 @@ def train(hyp, opt, device, tb_writer=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--client-rank', type=int, default=None, help='client number')
+    parser.add_argument('--round-length', type=int, default=None, help='number of epochs per communication round')
     parser.add_argument('--weights', type=str, default='yolo7.pt', help='initial weights path')
     parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
     parser.add_argument('--data', type=str, default='data/coco.yaml', help='data.yaml path')
@@ -533,7 +594,7 @@ if __name__ == '__main__':
     parser.add_argument('--rect', action='store_true', help='rectangular training')
     parser.add_argument('--resume', nargs='?', const=True, default=False, help='resume most recent training')
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')
-    parser.add_argument('--notest', action='store_true', help='only test final epoch')
+    parser.add_argument('--notest', action='store_true', help='no test even at final epoch')
     parser.add_argument('--noautoanchor', action='store_true', help='disable autoanchor check')
     parser.add_argument('--evolve', action='store_true', help='evolve hyperparameters')
     parser.add_argument('--bucket', type=str, default='', help='gsutil bucket')
@@ -605,10 +666,10 @@ if __name__ == '__main__':
     logger.info(opt)
     if not opt.evolve:
         tb_writer = None  # init loggers
-        if opt.global_rank in [-1, 0]:
-            prefix = colorstr('tensorboard: ')
-            logger.info(f"{prefix}Start with 'tensorboard --logdir {opt.project}', view at http://localhost:6006/")
-            tb_writer = SummaryWriter(opt.save_dir)  # Tensorboard
+        # if opt.global_rank in [-1, 0]:
+        #     prefix = colorstr('tensorboard: ')
+        #     logger.info(f"{prefix}Start with 'tensorboard --logdir {opt.project}', view at http://localhost:6006/")
+        #     tb_writer = SummaryWriter(opt.save_dir)  # Tensorboard
         train(hyp, opt, device, tb_writer)
 
     # Evolve hyperparameters (optional)

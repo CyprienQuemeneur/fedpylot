@@ -268,7 +268,7 @@ def train(hyp, opt, device, tb_writer=None):
             if plots:
                 #plot_labels(labels, names, save_dir, loggers)
                 if tb_writer:
-                    tb_writer.add_histogram('classes', c, 0)
+                    tb_writer.add_histogram('classes', c, 0)  # may encounter an issue with newer versions of numpy
 
             # Anchors
             if not opt.noautoanchor:
@@ -670,10 +670,10 @@ if __name__ == '__main__':
     logger.info(opt)
     if not opt.evolve:
         tb_writer = None  # init loggers
-        if opt.global_rank in [-1, 0]:
-            prefix = colorstr('tensorboard: ')
-            logger.info(f"{prefix}Start with 'tensorboard --logdir {opt.project}', view at http://localhost:6006/")
-            tb_writer = SummaryWriter(opt.save_dir)  # Tensorboard
+        # if opt.global_rank in [-1, 0]:
+        #     prefix = colorstr('tensorboard: ')
+        #     logger.info(f"{prefix}Start with 'tensorboard --logdir {opt.project}', view at http://localhost:6006/")
+        #     tb_writer = SummaryWriter(opt.save_dir)  # Tensorboard
         train(hyp, opt, device, tb_writer)
 
     # Evolve hyperparameters (optional)
