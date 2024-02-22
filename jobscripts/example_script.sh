@@ -28,17 +28,17 @@ module load mpi4py
 source ~/venv-py39-fl/bin/activate
 
 # Transmit all files besides the datasets folder to the local storage of the compute nodes
-srun rsync -a --exclude="datasets" ../fedyolov7-iov $SLURM_TMPDIR
+srun rsync -a --exclude="datasets" ../fedyolo-iov $SLURM_TMPDIR
 
 # Create an empty directory on the compute nodes local storage to receive their respective local dataset
-srun mkdir -p $SLURM_TMPDIR/fedyolov7-iov/datasets/nuimages10
+srun mkdir -p $SLURM_TMPDIR/fedyolo-iov/datasets/nuimages10
 
 # Transfer the local datasets from the network storage to the local storage of the compute nodes
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 srun --cpus-per-task=$SLURM_CPUS_PER_TASK python datasets/scatter_data.py --dataset nuimages10
 
 # Move to local storage
-cd $SLURM_TMPDIR/fedyolov7-iov
+cd $SLURM_TMPDIR/fedyolo-iov
 
 # Download pre-trained weights on the orchestrating node (i.e. the server)
 if [[ $SLURM_PROCID -eq 0 ]]; then

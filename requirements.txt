@@ -1,6 +1,6 @@
 # Usage: pip install -r requirements.txt
 
-# fedyolov7-iov requirements ---------------------
+# fedyolo-iov requirements ---------------------
 cryptography>=36.0.1
 matplotlib>=3.5.1
 mpi4py>=3.1.3

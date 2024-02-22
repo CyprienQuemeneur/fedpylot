@@ -11,9 +11,9 @@ from mpi4py import MPI
 
 def copy_and_extract(dataset: str, local_storage: str, file: str) -> None:
     """Copy and extract the local dataset."""
-    destination_directory = f'{local_storage}/fedyolov7-iov/datasets/{dataset}/'
+    destination_directory = f'{local_storage}/fedyolo-iov/datasets/{dataset}/'
     shutil.copy(f'datasets/{dataset}/{file}', destination_directory)
-    tar_file_path = f'{local_storage}/fedyolov7-iov/datasets/{dataset}/{file}'
+    tar_file_path = f'{local_storage}/fedyolo-iov/datasets/{dataset}/{file}'
     with tarfile.open(tar_file_path, 'r') as tar:
         tar.extractall(path=destination_directory)
 
@@ -27,8 +27,8 @@ def transfer_local_dataset(dataset: str, node_rank: int) -> None:
     else:
         copy_and_extract(dataset, slurm_tmpdir, f'client{node_rank}.tar')
     print(f"Node of rank {node_rank}."
-          f" Datasets directory files: {os.listdir(f'{slurm_tmpdir}/fedyolov7-iov/datasets/')}"
-          f" Local dataset files: {os.listdir(f'{slurm_tmpdir}/fedyolov7-iov/datasets/{dataset}/')}")
+          f" Datasets directory files: {os.listdir(f'{slurm_tmpdir}/fedyolo-iov/datasets/')}"
+          f" Local dataset files: {os.listdir(f'{slurm_tmpdir}/fedyolo-iov/datasets/{dataset}/')}")
 
 
 if __name__ == '__main__':
