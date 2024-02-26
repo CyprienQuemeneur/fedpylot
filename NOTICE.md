@@ -1,4 +1,4 @@
-    FEDYOLO-IOV
+    FEDPYLOT
 
 Copyright (C) 2023  Cyprien Quéméneur
 
