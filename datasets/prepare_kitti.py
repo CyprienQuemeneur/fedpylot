@@ -93,7 +93,7 @@ if __name__ == '__main__':
     args.add_argument('--img-path', type=str, default='datasets/data_object_image_2/training/image_2')
     args.add_argument('--label-path', type=str, default='datasets/data_object_label_2/training/label_2')
     args.add_argument('--target-path', type=str, default='datasets/kitti', help='path to target directory')
-    args.add_argument('--data', type=str, help='path to data yaml file')
+    args.add_argument('--data', type=str, default='data/kitti.yaml', help='path to data yaml file')
     args.add_argument('--class-map', type=dict, default=None, help='map between annotations, should match yaml file')
     args.add_argument('--nclients', type=int, default=5, help='number of clients in federated experiment')
     args.add_argument('--val-frac', type=float, default=0.25, help='fraction of data held by the server for validation')
