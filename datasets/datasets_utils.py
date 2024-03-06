@@ -1,6 +1,6 @@
-# Copyright (C) 2023 Cyprien Quéméneur
-# For the full license, please refer to the LICENSE file in the root directory of this project.
-# For the full copyright notices, please refer to the NOTICE file in the root directory of this project.
+# Copyright (C) 2024 Cyprien Quéméneur
+# FedPylot is released under the GPL-3.0 license, please refer to the LICENSE file in the root directory of the program.
+# For the full copyright notices, please refer to the NOTICE file in the root directory of the program.
 
 import os
 import pandas as pd

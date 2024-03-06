@@ -1,4 +1,4 @@
-    FEDPYLOT
+                    FEDPYLOT
 
 Copyright (C) 2023  Cyprien Quéméneur
 
@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 For questions or inquiries about this program, 
 please contact [cyprien.quemeneur@polymtl.ca](mailto:cyprien.quemeneur@polymtl.ca).
 
-    THIRD-PARTY COMPONENTS
+                    THIRD-PARTY COMPONENTS
 
 This program includes third-party code, redistributed under the GNU General Public License 3.0 (GPL-3.0).
 

@@ -1,14 +1,14 @@
 #!/bin/bash
 #
-# Copyright (C) 2023 Cyprien Quéméneur
-# For the full license, please refer to the LICENSE file in the root directory of this project.
-# For the full copyright notices, please refer to the NOTICE file in the root directory of this project.
+# Copyright (C) 2024 Cyprien Quéméneur
+# FedPylot is released under the GPL-3.0 license, please refer to the LICENSE file in the root directory of the program.
+# For the full copyright notices, please refer to the NOTICE file in the root directory of the program.
 
 #SBATCH --nodes=11                       # total number of nodes (1 server and 10 client nodes)
 #SBATCH --gpus-per-node=v100l:1          # total of 11 GPUs
 #SBATCH --ntasks-per-gpu=1               # 1 MPI process is launched per node
 #SBATCH --cpus-per-task=8                # CPU cores per MPI process
-#SBATCH --mem-per-cpu=4G                 # host memory per CPU core (1GB = 1024MB)
+#SBATCH --mem-per-cpu=2G                 # host memory per CPU core (1GB = 1024MB)
 #SBATCH --time=0-12:00:00                # time (DD-HH:MM:SS)
 #SBATCH --mail-user=myemail@gmail.com    # receive mail notifications
 #SBATCH --mail-type=ALL

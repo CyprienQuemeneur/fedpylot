@@ -1,6 +1,6 @@
-# Copyright (C) 2023 Cyprien Quéméneur
-# For the full license, please refer to the LICENSE file in the root directory of this project.
-# For the full copyright notices, please refer to the NOTICE file in the root directory of this project.
+# Copyright (C) 2024 Cyprien Quéméneur
+# FedPylot is released under the GPL-3.0 license, please refer to the LICENSE file in the root directory of the program.
+# For the full copyright notices, please refer to the NOTICE file in the root directory of the program.
 
 import copy
 import os
@@ -211,7 +211,7 @@ class Server(Node):
     """Specific server logic (model initialization, server-side optimization, weights and key sharing)."""
 
     def __init__(self, server_opt: str = 'fedavg', serverlr: float = 1., tau: float = None, beta: float = None) -> None:
-        """Initialize the server with rank 0 and optimizer (fedavg, fedavgm or fedadam)."""
+        """Initialize the server with rank 0 and optimizer (fedavg, fedavgm, fedadagrad or fedadam)."""
         super().__init__(rank=0)
         self.server_opt = server_opt
         self.server_lr = serverlr
@@ -219,6 +219,10 @@ class Server(Node):
         # FedAvgM additional parameters
         if self.server_opt == 'fedavgm':
             self.beta = beta
+            self.v_t = None
+        # FedAdagrad additional parameters
+        if self.server_opt == 'fedadagrad':
+            self.tau = tau
             self.v_t = None
         # FedAdam additional parameters
         if self.server_opt == 'fedadam':
@@ -315,6 +319,16 @@ class Server(Node):
         w_t = {key: w_t[key] - self.server_lr * self.v_t[key] for key in delta_t.keys()}
         return w_t
 
+    def __fedadagrad(self, delta_t):
+        """Compute the new weights using the FedAdagrad algorithm (server opt is Adagrad)."""
+        w_t = copy.deepcopy(self._ckpt['model'].state_dict())
+        self.v_t = {key: self.v_t[key] + delta_t[key] ** 2 for key in delta_t.keys()}
+        w_t = {
+            key: w_t[key] - self.server_lr * delta_t[key] / (torch.sqrt(self.v_t[key]) + self.tau)
+            for key in delta_t.keys()
+        }
+        return w_t
+
     def __fedadam(self, delta_t):
         """Compute the new weights using the FedAdam algorithm (server opt is Adam with default decay parameters)."""
         w_t = copy.deepcopy(self._ckpt['model'].state_dict())
@@ -338,18 +352,22 @@ class Server(Node):
         delta_t = self.__compute_pseudo_gradient(updates, nsamples_list)
         if self.server_opt == 'fedavg':
             new_sd = self.__fedavg(delta_t)
+        elif self.server_opt == 'fedavgm':
+            if self.v_t is None:
+                self.v_t = {key: torch.zeros_like(delta_t[key]) for key in delta_t.keys()}
+            new_sd = self.__fedavgm(delta_t)
+        elif self.server_opt == 'fedadagrad':
+            if self.v_t is None:
+                self.v_t = {key: torch.zeros_like(delta_t[key]) for key in delta_t.keys()}
+            new_sd = self.__fedadagrad(delta_t)
         elif self.server_opt == 'fedadam':
             if self.m_t is None:
                 self.m_t = {key: torch.zeros_like(delta_t[key]) for key in delta_t.keys()}
             if self.v_t is None:
                 self.v_t = {key: torch.zeros_like(delta_t[key]) for key in delta_t.keys()}
             new_sd = self.__fedadam(delta_t)
-        elif self.server_opt == 'fedavgm':
-            if self.v_t is None:
-                self.v_t = {key: torch.zeros_like(delta_t[key]) for key in delta_t.keys()}
-            new_sd = self.__fedavgm(delta_t)
         else:
-            raise ValueError('Server optimizer not recognized, must be fedavg, fedavgm, or fedadam')
+            raise ValueError('Server optimizer not recognized, must be fedavg, fedavgm, fedadagrad, or fedadam')
         model = self._ckpt['model']
         model.load_state_dict(new_sd)
         self._ckpt['model'] = model

@@ -1,6 +1,6 @@
-# Copyright (C) 2023 Cyprien Quéméneur
-# For the full license, please refer to the LICENSE file in the root directory of this project.
-# For the full copyright notices, please refer to the NOTICE file in the root directory of this project.
+# Copyright (C) 2024 Cyprien Quéméneur
+# FedPylot is released under the GPL-3.0 license, please refer to the LICENSE file in the root directory of the program.
+# For the full copyright notices, please refer to the NOTICE file in the root directory of the program.
 
 import argparse
 import os
@@ -17,8 +17,8 @@ from node import Client, Node, Server
 
 def init_node(rank: int, server_opt: str, server_lr: float, tau: float, beta: float) -> Node:
     """Initialize a node (client or server) based on its rank."""
-    if server_opt not in ['fedavg', 'fedavgm', 'fedadam']:
-        raise ValueError(f'Aggregation algorithm {server_opt} not recognized, must be fedavg, fedavgm, or fedadam.')
+    if server_opt not in ['fedavg', 'fedavgm', 'fedadagrad', 'fedadam']:
+        raise ValueError(f'Server optimizer {server_opt} unavailable, must be fedavg, fedavgm, fedadagrad, or fedadam.')
     return Server(server_opt, server_lr, tau, beta) if rank == 0 else Client(rank)
 
 
@@ -118,9 +118,9 @@ if __name__ == "__main__":
     parser.add_argument('--nrounds', type=int, default=30, help='number of communication rounds')
     parser.add_argument('--epochs', type=int, default=5, help='number of epochs executed per communication round')
     parser.add_argument('--server-opt', type=str, default='fedavg', help='aggregation algorithm/server-side optimizer')
-    parser.add_argument('--server-lr', type=float, default=1., help='server-side learning rate')
-    parser.add_argument('--tau', type=float, default=1e-3, help='server-side adaptivity level with FedAdam')
-    parser.add_argument('--beta', type=float, default=0.1, help='server-side momentum with FedAvgM')
+    parser.add_argument('--server-lr', type=float, default=1., help='server learning rate')
+    parser.add_argument('--tau', type=float, default=1e-3, help='server adaptivity level with FedAdam and FedAdagrad')
+    parser.add_argument('--beta', type=float, default=0.1, help='server momentum with FedAvgM')
     parser.add_argument('--architecture', type=str, default='yolov7', help='model architecture')
     parser.add_argument('--weights', type=str, help='path to pretrained weights')
     parser.add_argument('--data', type=str, help='*.data path')
@@ -162,12 +162,14 @@ if __name__ == "__main__":
             f.write(f'epochs: {args.epochs}\n')
             f.write(f'server opt: {args.server_opt}\n')
             f.write(f'server learning rate: {args.server_lr}\n')
+            if args.server_opt == 'fedavgm':
+                f.write(f'fedavgm - beta: {args.beta}\n')
+            if args.server_opt == 'fedadagrad':
+                f.write(f'fedadagrad - tau: {args.tau}\n')
             if args.server_opt == 'fedadam':
                 f.write(f'fedadam - tau: {args.tau}\n')
                 f.write(f'fedadam - beta1: {0.9}\n')
                 f.write(f'fedadam - beta2: {0.99}\n')
-            if args.server_opt == 'fedavgm':
-                f.write(f'fedavgm - beta: {args.beta}\n')
             f.write(f'architecture: {args.architecture}\n')
             f.write(f'weights: {args.weights}\n')
             f.write(f'data: {args.data}\n')
