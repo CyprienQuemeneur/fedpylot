@@ -27,8 +27,12 @@ module load mpi4py
 # Load pre-existing virtual environment
 source ~/venv-py39-fl/bin/activate
 
-# Transmit all files besides the datasets folder to the local storage of the compute nodes
-srun rsync -a --exclude="datasets" ../fedpylot $SLURM_TMPDIR
+# Prepare directory to backup results
+saving_path=$(pwd)/results/nuimages10/yolov7/fedavgm
+mkdir -p $saving_path
+
+# Transmit all files besides the datasets and results directories to the local storage of the compute nodes
+srun rsync -a --exclude="datasets" --exclude="results" ../fedpylot $SLURM_TMPDIR
 
 # Create an empty directory on the compute nodes local storage to receive their respective local dataset
 srun mkdir -p $SLURM_TMPDIR/fedpylot/datasets/nuimages10
@@ -45,7 +49,7 @@ if [[ $SLURM_PROCID -eq 0 ]]; then
     bash weights/get_pweights.sh yolov7
 fi
 
-# Launch federated learning experiment (see main.py for more details on the settings)
+# Run federated learning experiment (see main.py for more details on the settings)
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 srun --cpus-per-task=$SLURM_CPUS_PER_TASK python main.py \
     --nrounds 30 \
@@ -65,5 +69,5 @@ srun --cpus-per-task=$SLURM_CPUS_PER_TASK python main.py \
     --hyp data/hyp.scratch.clientopt.nuimages.yaml \
     --workers 8
 
-# Backup experiments folder to network storage
-cp -r ./experiments  $myprojects/results
+# Backup experiment results to network storage
+cp -r ./experiments $saving_path

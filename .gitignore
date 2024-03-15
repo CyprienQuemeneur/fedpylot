@@ -9,7 +9,7 @@
 **/kitti
 **/nuimages10
 **/nuimages23
-**/experiments
+results
 !media/*.png
 !requirements.txt
 !yolov7/figure/*.jpg
