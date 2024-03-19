@@ -93,7 +93,15 @@ class Node:
         backup_gr = ckpt['model'].gr
         nc = ckpt['model'].nc
         deploy_path = f'yolov7/cfg/deploy/{architecture}.yaml'
-        id_mp = {'yolov7': 105, 'yolov7x': 121, 'yolov7-w6': 118, 'yolov7-e6': 140, 'yolov7-d6': 162, 'yolov7-e6e': 261}
+        id_mp = {
+            'yolov7-tiny': 77,
+            'yolov7': 105,
+            'yolov7x': 121,
+            'yolov7-w6': 118,
+            'yolov7-e6': 140,
+            'yolov7-d6': 162,
+            'yolov7-e6e': 261
+        }
         model = Model(deploy_path, ch=3, nc=nc).to(self.device)
         with open(deploy_path) as f:
             yml = yaml.load(f, Loader=yaml.SafeLoader)
@@ -106,7 +114,7 @@ class Node:
         model.load_state_dict(intersect_state_dict, strict=False)
         model.names = ckpt['model'].names
         model.nc = ckpt['model'].nc
-        if architecture in ['yolov7', 'yolov7x']:
+        if architecture in ['yolov7-tiny', 'yolov7', 'yolov7x']:
             # Re-parameterization of P5 models
             idx = id_mp[architecture]
             for i in range((model.nc + 5) * anchors):
@@ -430,7 +438,7 @@ class Client(Node):
               cfg: str, hyp: str, workers: int, saving_path: str) -> None:
         """Train the model on the local training set and store the new checkpoint and update."""
         end_weights = f'{saving_path}/run/train-client{self.rank}/weights/last.pt'
-        if architecture in ['yolov7', 'yolov7x']:
+        if architecture in ['yolov7-tiny', 'yolov7', 'yolov7x']:
             script_path = './yolov7/train.py'
         elif architecture in ['yolov7-w6', 'yolov7-e6', 'yolov7-d6', 'yolov7-e6e']:
             script_path = './yolov7/train_aux.py'
