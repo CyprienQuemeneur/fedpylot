@@ -241,8 +241,8 @@ class Server(Node):
             self.v_t = None
 
     @property
-    def clients_public_keys(self):
-        """Return the serialized public keys of the clients."""
+    def clients_public_keys(self) -> dict:
+        """Return the public keys of the clients."""
         return self.__clients_public_keys
 
     @clients_public_keys.setter
@@ -327,7 +327,7 @@ class Server(Node):
         w_t = {key: w_t[key] - self.server_lr * self.v_t[key] for key in delta_t.keys()}
         return w_t
 
-    def __fedadagrad(self, delta_t):
+    def __fedadagrad(self, delta_t: dict) -> dict:
         """Compute the new weights using the FedAdagrad algorithm (server opt is Adagrad)."""
         w_t = copy.deepcopy(self._ckpt['model'].state_dict())
         self.v_t = {key: self.v_t[key] + delta_t[key] ** 2 for key in delta_t.keys()}
@@ -337,7 +337,7 @@ class Server(Node):
         }
         return w_t
 
-    def __fedadam(self, delta_t):
+    def __fedadam(self, delta_t: dict) -> dict:
         """Compute the new weights using the FedAdam algorithm (server opt is Adam with default decay parameters)."""
         w_t = copy.deepcopy(self._ckpt['model'].state_dict())
         self.m_t = {
@@ -394,8 +394,8 @@ class Client(Node):
         self.nsamples = None
 
     @property
-    def server_public_key(self):
-        """Return the serialized public key of the server."""
+    def server_public_key(self) -> bytes:
+        """Return the public key of the server."""
         return self.__server_public_key
 
     @server_public_key.setter

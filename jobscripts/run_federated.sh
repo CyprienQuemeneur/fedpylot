@@ -28,7 +28,7 @@ module load mpi4py
 source ~/venv-py39-fl/bin/activate
 
 # Prepare directory to backup results
-saving_path=$(pwd)/results/nuimages10/yolov7/fedavgm
+saving_path=$(pwd)/results/nuimages10/yolov7/fedoptm
 mkdir -p $saving_path
 
 # Transmit all files besides the datasets and results directories to the local storage of the compute nodes
