@@ -17,8 +17,9 @@ from node import Client, Node, Server
 
 def init_node(rank: int, server_opt: str, server_lr: float, tau: float, beta: float) -> Node:
     """Initialize a node (client or server) based on its rank."""
-    if server_opt not in ['fedavg', 'fedavgm', 'fedadagrad', 'fedadam']:
-        raise ValueError(f'Server optimizer {server_opt} unavailable, must be fedavg, fedavgm, fedadagrad, or fedadam.')
+    available_optimizers = ['fedavg', 'fedavgm', 'fedadagrad', 'fedadam', 'fedyogi']
+    if server_opt not in available_optimizers:
+        raise ValueError(f'Server optimizer {server_opt} unavailable, must be in {available_optimizers}.')
     return Server(server_opt, server_lr, tau, beta) if rank == 0 else Client(rank)
 
 
@@ -119,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument('--epochs', type=int, default=5, help='number of epochs executed per communication round')
     parser.add_argument('--server-opt', type=str, default='fedavg', help='aggregation algorithm/server-side optimizer')
     parser.add_argument('--server-lr', type=float, default=1., help='server learning rate')
-    parser.add_argument('--tau', type=float, default=1e-3, help='server adaptivity level with FedAdam and FedAdagrad')
+    parser.add_argument('--tau', type=float, default=1e-3, help='server adaptivity for FedAdagrad, FedAdam and FedYogi')
     parser.add_argument('--beta', type=float, default=0.1, help='server momentum with FedAvgM')
     parser.add_argument('--architecture', type=str, default='yolov7', help='model architecture')
     parser.add_argument('--weights', type=str, help='path to pretrained weights')

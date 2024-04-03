@@ -219,7 +219,7 @@ class Server(Node):
     """Specific server logic (model initialization, server-side optimization, weights and key sharing)."""
 
     def __init__(self, server_opt: str = 'fedavg', serverlr: float = 1., tau: float = None, beta: float = None) -> None:
-        """Initialize the server with rank 0 and optimizer (fedavg, fedavgm, fedadagrad or fedadam)."""
+        """Initialize the server with rank 0 and optimizer (fedavg, fedavgm, fedadagrad, fedadam or fedyogi)."""
         super().__init__(rank=0)
         self.server_opt = server_opt
         self.server_lr = serverlr
@@ -233,7 +233,7 @@ class Server(Node):
             self.tau = tau
             self.v_t = None
         # FedAdam additional parameters
-        if self.server_opt == 'fedadam':
+        if self.server_opt in ['fedadam', 'fedyogi']:
             self.beta1 = 0.9
             self.beta2 = 0.99
             self.tau = tau
@@ -354,6 +354,23 @@ class Server(Node):
         }
         return w_t
 
+    def __fedyogi(self, delta_t: dict) -> dict:
+        """Compute the new weights using the FedYogi algorithm (server opt is Yogi with default decay parameters)."""
+        w_t = copy.deepcopy(self._ckpt['model'].state_dict())
+        self.m_t = {
+            key: self.beta1 * self.m_t[key] + (1. - self.beta1) * delta_t[key]
+            for key in delta_t.keys()
+        }
+        self.v_t = {
+            key: self.v_t[key] - (1. - self.beta2) * delta_t[key] ** 2 * torch.sign(self.v_t[key] - delta_t[key] ** 2)
+            for key in delta_t.keys()
+        }
+        w_t = {
+            key: w_t[key] - self.server_lr * self.m_t[key] / (torch.sqrt(self.v_t[key]) + self.tau)
+            for key in delta_t.keys()
+        }
+        return w_t
+
     def aggregate(self, state_dicts_encrypted: list[tuple[bytes, bytes, bytes, int]]) -> None:
         """Compute the weights for the next communication round using the clients' local updates."""
         updates, nsamples_list = self.__decrypt_updates(state_dicts_encrypted)
@@ -374,8 +391,14 @@ class Server(Node):
             if self.v_t is None:
                 self.v_t = {key: torch.zeros_like(delta_t[key]) for key in delta_t.keys()}
             new_sd = self.__fedadam(delta_t)
+        elif self.server_opt == 'fedyogi':
+            if self.m_t is None:
+                self.m_t = {key: torch.zeros_like(delta_t[key]) for key in delta_t.keys()}
+            if self.v_t is None:
+                self.v_t = {key: torch.zeros_like(delta_t[key]) for key in delta_t.keys()}
+            new_sd = self.__fedyogi(delta_t)
         else:
-            raise ValueError('Server optimizer not recognized, must be fedavg, fedavgm, fedadagrad, or fedadam')
+            raise ValueError('Server optimizer not recognized, must be fedavg, fedavgm, fedadagrad, fedadam or fedyogi')
         model = self._ckpt['model']
         model.load_state_dict(new_sd)
         self._ckpt['model'] = model
