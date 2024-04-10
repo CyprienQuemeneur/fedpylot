@@ -1,6 +1,6 @@
                     FEDPYLOT
 
-Copyright (C) 2023  Cyprien Quéméneur
+Copyright (C) 2024  Cyprien Quéméneur
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

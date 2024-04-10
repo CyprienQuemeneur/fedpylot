@@ -8,7 +8,7 @@ from PIL import Image
 import random
 import shutil
 from tqdm import tqdm
-from datasets_utils import create_directories, get_distribution_dataframe, convert_bbox
+from datasets_utils import create_directories, archive_directories, get_distribution_dataframe, convert_bbox
 
 KITTI_TRAIN_SIZE = 7481
 DEFAULT_CLASS_MAP = {
@@ -43,7 +43,7 @@ def get_iid_splits(nclients: int, val_frac: float) -> dict:
 
 
 def process_kitti(img_path: str, label_path: str, target_path: str, data: str, class_map: dict, nclients: int,
-                  val_frac: float) -> None:
+                  val_frac: float, tar: bool) -> None:
     """Convert KITTI annotations and split the data among the server and clients."""
     print('Converting annotations and splitting data...')
     create_directories(target_path, nclients)
@@ -86,17 +86,21 @@ def process_kitti(img_path: str, label_path: str, target_path: str, data: str, c
                     objects_distribution.loc[obj_type, destination] += 1
     # Save objects distribution
     objects_distribution.to_csv(f'{target_path}/objects_distribution.csv')
+    # Archive the directories of the federated participants
+    if tar:
+        print('Archiving...')
+        archive_directories(target_path, nclients)
 
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
-    args.add_argument('--img-path', type=str, default='datasets/data_object_image_2/training/image_2')
-    args.add_argument('--label-path', type=str, default='datasets/data_object_label_2/training/label_2')
+    args.add_argument('--img-path', type=str, default='datasets/data_object_image_2/training/image_2', help='path to images')
+    args.add_argument('--label-path', type=str, default='datasets/data_object_label_2/training/label_2', help='path to labels')
     args.add_argument('--target-path', type=str, default='datasets/kitti', help='path to target directory')
     args.add_argument('--data', type=str, default='data/kitti.yaml', help='path to data yaml file')
-    args.add_argument('--class-map', type=dict, default=None, help='map between annotations, should match yaml file')
+    args.add_argument('--class-map', type=dict, default=DEFAULT_CLASS_MAP, help='map between annotations, should match yaml file')
     args.add_argument('--nclients', type=int, default=5, help='number of clients in federated experiment')
     args.add_argument('--val-frac', type=float, default=0.25, help='fraction of data held by the server for validation')
+    args.add_argument('--tar', action='store_true', help='archive the directories of the federated participants')
     args = args.parse_args()
-    class_map = DEFAULT_CLASS_MAP if args.class_map is None else args.class_map
-    process_kitti(args.img_path, args.label_path, args.target_path, args.data, class_map, args.nclients, args.val_frac)
+    process_kitti(args.img_path, args.label_path, args.target_path, args.data, args.class_map, args.nclients, args.val_frac, args.tar)

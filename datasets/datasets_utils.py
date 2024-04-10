@@ -4,6 +4,7 @@
 
 import os
 import pandas as pd
+import tarfile
 import yaml
 
 
@@ -21,6 +22,21 @@ def create_directories(target_path: str, nclients: int) -> None:
         for subdict in ['', '/images', '/labels']:
             if not os.path.exists(f'{target_path}/client{k}{subdict}'):
                 os.makedirs(f'{target_path}/client{k}{subdict}')
+
+
+def archive_directories(target_path: str, nclients: int) -> None:
+    """Archive the directories of the federated participants to store them in the computer cluster."""
+    # Archive the server directory
+    server_path = os.path.join(target_path, 'server')
+    tar_file_name = os.path.join(target_path, 'server.tar')
+    with tarfile.open(tar_file_name, 'w') as tar_handle:
+        tar_handle.add(server_path, arcname='server')
+    # Archive the client directories
+    for k in range(1, nclients + 1):
+        client_path = os.path.join(target_path, f'client{k}')
+        tar_file_name = os.path.join(target_path, f'client{k}.tar')
+        with tarfile.open(tar_file_name, 'w') as tar_handle:
+            tar_handle.add(client_path, arcname=f'client{k}')
 
 
 def get_distribution_dataframe(data: str, nclients: int) -> pd.DataFrame:

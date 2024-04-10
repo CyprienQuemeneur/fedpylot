@@ -9,7 +9,7 @@ import shutil
 from nuimages import NuImages
 import pandas as pd
 from tqdm import tqdm
-from datasets_utils import create_directories, get_distribution_dataframe, convert_bbox
+from datasets_utils import create_directories, archive_directories, get_distribution_dataframe, convert_bbox
 
 CLASS_MAP10 = {
     'animal': None,
@@ -146,7 +146,7 @@ def process_subset(subset: str, dataset_path: str, target_path: str, class_map: 
     objects_distribution.to_csv(f'{target_path}/objects_distribution.csv')
 
 
-def process_nuimages(dataset_path: str, target_path: str, data: str, class_map: dict, nclients: int) -> None:
+def process_nuimages(dataset_path: str, target_path: str, data: str, class_map: dict, nclients: int, tar: bool) -> None:
     """Convert annotations to YOLO format and splits data among the server and clients for training and validation."""
     print('Converting annotations and splitting data...')
     if class_map == 10:
@@ -161,6 +161,10 @@ def process_nuimages(dataset_path: str, target_path: str, data: str, class_map: 
     # Process training and validation subsets separately according to nuImages predefined splits
     for subset in ['train', 'val']:
         process_subset(subset, dataset_path, target_path, class_map, nclients)
+    # Archive the directories of the federated participants
+    if tar:
+        print('Archiving...')
+        archive_directories(target_path, nclients)
 
 
 if __name__ == '__main__':
@@ -170,7 +174,8 @@ if __name__ == '__main__':
     args.add_argument('--class-map', type=int, default=10, help='map between annotations, should match yaml file')
     args.add_argument('--data', type=str, default=None, help='path to data yaml file')
     args.add_argument('--nclients', type=int, default=10, help='number of clients in federated experiment')
+    args.add_argument('--tar', action='store_true', help='archive the directories of the federated participants')
     args = args.parse_args()
     data = f'./data/nuimages{args.class_map}.yaml' if args.data is None else args.data
     target_path = f'{args.dataset_path}nuimages{args.class_map}' if args.target_path is None else args.target_path
-    process_nuimages(args.dataset_path, target_path, data, args.class_map, args.nclients)
+    process_nuimages(args.dataset_path, target_path, data, args.class_map, args.nclients, args.tar)
