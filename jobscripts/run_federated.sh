@@ -66,7 +66,7 @@ srun --cpus-per-task=$SLURM_CPUS_PER_TASK python main.py \
     --conf 0.001 \
     --iou 0.65 \
     --cfg yolov7/cfg/training/yolov7.yaml \
-    --hyp data/hyp.scratch.clientopt.nuimages.yaml \
+    --hyp data/hyps/hyp.scratch.clientopt.nuimages.yaml \
     --workers 8
 
 # Backup experiment results to network storage

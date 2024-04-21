@@ -22,10 +22,10 @@ from utils.torch_utils import intersect_dicts, is_parallel, select_device
 
 
 class Node:
-    """General node logic common to the server and clients. Evaluation is performed here to allow personalized FL."""
+    """General node logic common to the server and clients. Allows server-side and client-side evaluation."""
 
     def __init__(self, rank: int) -> None:
-        """Initialize the node with its rank, device, public and private keys, and symmetric key password."""
+        """Initialize the node with its rank, device, public and private keys."""
         self.rank = rank
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self._ckpt = None
@@ -33,7 +33,6 @@ class Node:
         self._private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         self._public_key = self._private_key.public_key()
         self._symmetric_key = None
-        self._password = b'my great password'
 
     @property
     def public_key(self) -> bytes:
@@ -224,6 +223,7 @@ class Server(Node):
         self.server_opt = server_opt
         self.server_lr = serverlr
         self.__clients_public_keys = None
+        self.__password = b'my great password'
         # FedAvgM additional parameters
         if self.server_opt == 'fedavgm':
             self.beta = beta
@@ -255,7 +255,7 @@ class Server(Node):
         key_length = 32  # AES-256 key length (256 bits)
         salt = secrets.token_bytes(key_length)
         kdf = Scrypt(salt=salt, length=key_length, n=2 ** 20, r=8, p=1)
-        symmetric_key = kdf.derive(self._password)
+        symmetric_key = kdf.derive(self.__password)
         self._symmetric_key = symmetric_key
 
     def get_symmetric_key(self) -> list[bytes]:

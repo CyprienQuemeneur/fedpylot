@@ -56,7 +56,7 @@ python yolov7/train.py \
     --batch 32 \
     --img 640 640 \
     --cfg yolov7/cfg/training/yolov7.yaml \
-    --hyp data/hyp.scratch.clientopt.nuimages.yaml \
+    --hyp data/hyps/hyp.scratch.clientopt.nuimages.yaml \
     --workers 8 \
     --project experiments \
     --name ''
