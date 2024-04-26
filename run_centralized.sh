@@ -6,9 +6,9 @@
 
 #SBATCH --nodes=1                        # total number of nodes (only 1 in the centralized setting)
 #SBATCH --gpus-per-node=v100l:1          # total of 1 GPU
-#SBATCH --ntasks-per-gpu=1               # 1 process is launched per node
+#SBATCH --ntasks-per-gpu=1               # 1 process is launched
 #SBATCH --cpus-per-task=8                # CPU cores per process
-#SBATCH --mem-per-cpu=2G                 # host memory per CPU core (1GB = 1024MB)
+#SBATCH --mem-per-cpu=2G                 # host memory per CPU core
 #SBATCH --time=3-12:00:00                # time (DD-HH:MM:SS)
 #SBATCH --mail-user=myemail@gmail.com    # receive mail notifications
 #SBATCH --mail-type=ALL

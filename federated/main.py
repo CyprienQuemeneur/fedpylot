@@ -167,10 +167,10 @@ if __name__ == "__main__":
                 f.write(f'fedavgm - beta: {args.beta}\n')
             if args.server_opt == 'fedadagrad':
                 f.write(f'fedadagrad - tau: {args.tau}\n')
-            if args.server_opt == 'fedadam':
-                f.write(f'fedadam - tau: {args.tau}\n')
-                f.write(f'fedadam - beta1: {0.9}\n')
-                f.write(f'fedadam - beta2: {0.99}\n')
+            if args.server_opt in ['fedadam', 'fedyogi']:
+                f.write(f'{args.server_opt} - tau: {args.tau}\n')
+                f.write(f'{args.server_opt} - beta1: {0.9}\n')
+                f.write(f'{args.server_opt} - beta2: {0.99}\n')
             f.write(f'architecture: {args.architecture}\n')
             f.write(f'weights: {args.weights}\n')
             f.write(f'data: {args.data}\n')

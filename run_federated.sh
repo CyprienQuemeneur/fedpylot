@@ -8,7 +8,7 @@
 #SBATCH --gpus-per-node=v100l:1          # total of 11 GPUs
 #SBATCH --ntasks-per-gpu=1               # 1 MPI process is launched per node
 #SBATCH --cpus-per-task=8                # CPU cores per MPI process
-#SBATCH --mem-per-cpu=2G                 # host memory per CPU core (1GB = 1024MB)
+#SBATCH --mem-per-cpu=2G                 # host memory per CPU core
 #SBATCH --time=0-12:00:00                # time (DD-HH:MM:SS)
 #SBATCH --mail-user=myemail@gmail.com    # receive mail notifications
 #SBATCH --mail-type=ALL
@@ -39,7 +39,7 @@ srun mkdir -p $SLURM_TMPDIR/fedpylot/datasets/nuimages10
 
 # Transfer the local datasets from the network storage to the local storage of the compute nodes
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-srun --cpus-per-task=$SLURM_CPUS_PER_TASK python datasets/scatter_data.py --dataset nuimages10
+srun --cpus-per-task=$SLURM_CPUS_PER_TASK python federated/scatter_data.py --dataset nuimages10
 
 # Move to local storage
 cd $SLURM_TMPDIR/fedpylot
@@ -51,7 +51,7 @@ fi
 
 # Run federated learning experiment (see main.py for more details on the settings)
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-srun --cpus-per-task=$SLURM_CPUS_PER_TASK python main.py \
+srun --cpus-per-task=$SLURM_CPUS_PER_TASK python federated/main.py \
     --nrounds 30 \
     --epochs 5 \
     --server-opt fedavgm \
