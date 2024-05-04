@@ -1,12 +1,10 @@
 #!/bin/bash
-#
-# Copyright (C) 2024 Cyprien Quéméneur
-# FedPylot is released under the GPL-3.0 license, please refer to the LICENSE file in the root directory of the program.
-# For the full copyright notices, please refer to the NOTICE file in the root directory of the program.
+# FedPylot by Cyprien Quéméneur, GPL-3.0 license
+# Example usage: bash weights/get_weights.sh yolov7
 
 # Base link to the official YOLOv7 weights and destination directory
 base_url="https://github.com/WongKinYiu/yolov7/releases/download/v0.1"
-destination_dir="weights/pretrained"
+destination_dir="weights/yolov7"
 
 # Check if the model architecture is provided
 if [ $# -ne 1 ]; then

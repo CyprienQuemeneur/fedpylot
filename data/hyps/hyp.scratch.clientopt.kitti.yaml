@@ -1,3 +1,6 @@
+# FedPylot by Cyprien Quéméneur, GPL-3.0 license
+# Hyperparameters for training YOLOv7 on KITTI with FedOpt (default fine-tuning setting with extended warmup)
+
 lr0: 0.01  # initial learning rate (SGD=1E-2, Adam=1E-3)
 lrf: 0.1  # final OneCycleLR learning rate (lr0 * lrf)
 momentum: 0.937  # SGD momentum/Adam beta1

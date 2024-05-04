@@ -1,6 +1,4 @@
-# Copyright (C) 2024 Cyprien Quéméneur
-# FedPylot is released under the GPL-3.0 license, please refer to the LICENSE file in the root directory of the program.
-# For the full copyright notices, please refer to the NOTICE file in the root directory of the program.
+# FedPylot by Cyprien Quéméneur, GPL-3.0 license
 
 import argparse
 import os

@@ -1,8 +1,6 @@
 #!/bin/bash
-#
-# Copyright (C) 2024 Cyprien Quéméneur
-# FedPylot is released under the GPL-3.0 license, please refer to the LICENSE file in the root directory of the program.
-# For the full copyright notices, please refer to the NOTICE file in the root directory of the program.
+# FedPylot by Cyprien Quéméneur, GPL-3.0 license
+# Example usage: sbatch run_federated.sh
 
 #SBATCH --nodes=11                       # total number of nodes (1 server and 10 client nodes)
 #SBATCH --gpus-per-node=v100l:1          # total of 11 GPUs
@@ -46,7 +44,7 @@ cd $SLURM_TMPDIR/fedpylot
 
 # Download pre-trained weights on the orchestrating node (i.e. the server)
 if [[ $SLURM_PROCID -eq 0 ]]; then
-    bash weights/get_pweights.sh yolov7
+    bash weights/get_weights.sh yolov7
 fi
 
 # Run federated learning experiment (see main.py for more details on the settings)
@@ -58,7 +56,7 @@ srun --cpus-per-task=$SLURM_CPUS_PER_TASK python federated/main.py \
     --server-lr 1.0 \
     --beta 0.1 \
     --architecture yolov7 \
-    --weights weights/pretrained/yolov7_training.pt \
+    --weights weights/yolov7/yolov7_training.pt \
     --data data/nuimages10.yaml \
     --bsz-train 32 \
     --bsz-val 32 \

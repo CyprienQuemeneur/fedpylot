@@ -1,3 +1,6 @@
+# FedPylot by Cyprien Quéméneur, GPL-3.0 license
+# Hyperparameters for training YOLOv7 with FedAvg (simple local SGD without learning rate scheduling or momentum)
+
 lr0: 0.01  # initial learning rate (SGD=1E-2, Adam=1E-3)
 lrf: 1.0  # final OneCycleLR learning rate (lr0 * lrf)
 momentum: 0.  # SGD momentum/Adam beta1

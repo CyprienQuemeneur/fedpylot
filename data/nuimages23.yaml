@@ -1,6 +1,7 @@
+# FedPylot by Cyprien Quéméneur, GPL-3.0 license
 # nuImages: large-scale autonomous driving dataset with image-level 2d annotations - https://www.nuscenes.org/nuimages
 # nuImages & nuScenes devkit - https://github.com/nutonomy/nuscenes-devkit
-# default 23 classes mapping
+# Default 23 classes mapping
 
 # base path to subsets
 train: ./datasets/nuimages23
