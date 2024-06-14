@@ -73,26 +73,34 @@ The DontCare attribute is ignored. The random seed is fixed so that splitting is
 split and the annotation conversion, run the following:
 
 ```bash
-python datasets/prepare_kitti.py --data data/kitti.yaml --tar
+python datasets/prepare_kitti.py --tar
 ```
 
 #### nuImages
 
 Go to https://nuscenes.org/nuimages and create an account, then download the samples and metadata (sweeps are not 
 needed), and unzip the files in the `datasets` subfolder of this program. Unlike KITTI, nuImages is organized
-as a relational database, and we will use the `nuscenes-devkit` to manipulate the files.
+as a relational database, and we will use the `nuscenes-devkit` to manipulate the files. For the devkit to work
+properly, you need to create a `nuimages` folder and move the folders corresponding to the samples and labels to it.
+The folder structure should then be the following:
+```
+/datasets/nuimages
+    samples	-	Sensor data for keyframes (annotated images).
+    v1.0-train	-	JSON tables that include all the metadata and annotations for the training set.
+    v1.0-train	-	JSON tables that include all the metadata and annotations for the validation set.
+```
 
-nuImages feature a predefined validation set which is stored on the server, while the training data is split non-IID
+nuImages predefined validation set is stored on the server, while the training data is split non-IID
 among 10 clients based on the locations and timeframes at which the data samples were captured.
 
 Run the following to create the split which retains only 10 classes based on the nuScenes competition:
 ```bash
-python datasets/prepare_nuimages.py --data data/nuimages.yaml --class-map 10 --tar
+python datasets/prepare_nuimages.py --class-map 10 --tar
 ```
 
 And the following to retain the full long-tail distribution with 23 classes:
 ```bash
-python datasets/prepare_nuimages.py --data data/nuimages.yaml --class-map 23 --tar
+python datasets/prepare_nuimages.py --class-map 23 --tar
 ```
 
 ## 🚀 Run a Job

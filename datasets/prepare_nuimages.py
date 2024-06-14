@@ -167,7 +167,7 @@ def process_nuimages(dataset_path: str, target_path: str, data: str, class_map: 
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
-    args.add_argument('--dataset-path', type=str, default='./datasets/', help='path to dataset directory')
+    args.add_argument('--dataset-path', type=str, default='./datasets/nuimages/', help='path to dataset directory')
     args.add_argument('--target-path', type=str, default=None, help='path to target directory to store processed data')
     args.add_argument('--class-map', type=int, default=10, help='map between annotations, should match yaml file')
     args.add_argument('--data', type=str, default=None, help='path to data yaml file')
@@ -175,5 +175,5 @@ if __name__ == '__main__':
     args.add_argument('--tar', action='store_true', help='archive the directories of the federated participants')
     args = args.parse_args()
     data = f'./data/nuimages{args.class_map}.yaml' if args.data is None else args.data
-    target_path = f'{args.dataset_path}nuimages{args.class_map}' if args.target_path is None else args.target_path
+    target_path = f'./datasets/nuimages{args.class_map}' if args.target_path is None else args.target_path
     process_nuimages(args.dataset_path, target_path, data, args.class_map, args.nclients, args.tar)
