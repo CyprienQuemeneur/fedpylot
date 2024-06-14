@@ -4,13 +4,18 @@ This README is currently under construction 🚧.
 
 ## Table of Contents
 
-- [Introduction](#-introduction-)
-- [Tutorial](#-tutorial-)
-- [Citation](#️-citation-)
-- [Acknowledgement](#-acknowledgement-)
-- [License](#-license-)
+- [🔥 What's New](#-whats-new)
+- [📖 Introduction](#-introduction)
+- [🐍 Installation](#-installation)
+- [⚙️ Data Preparation](#-data-preparation)
+- [🚀 Run a Job](#-run-a-job)
+- [🎓 Citation](#️-citation)
+- [🤝 Acknowledgements](#-acknowledgements)
+- [📜 License](#-license)
 
-## Introduction
+## 🔥 What's New
+
+## 📖 Introduction
 
 **Official repository** of:
 - [Cyprien Quéméneur](https://scholar.google.com/citations?hl=en&user=qQ5fKGgAAAAJ),
@@ -20,11 +25,7 @@ This README is currently under construction 🚧.
 For questions or inquiries about this program, please contact
 [cyprien.quemeneur@protonmail.com](mailto:cyprien.quemeneur@protonmail.com).
 
-## Tutorial
-
-Here we describe how to get started with FedPylot and reproduce the results of our paper.
-
-### Installation
+## 🐍 Installation
 
 We encourage to install FedPylot both locally and on your computer cluster, as a local env will be more suited for
 preparing the data and can help for prototyping.
@@ -42,11 +43,12 @@ pip install -r requirements.txt
 Installing all the packages on your cluster can come with some subtleties, and we would advise to refer to the
 documentation of your cluster for package installation and loading.
 
-### Downloading the datasets
+For convenience, speed measurements were performed on Google Colab. You can check our notebook which
 
-We used two publicly available object detection datasets in our paper: KITTI and nuImages. 
+## ⚙️ Data Preparation
 
-### Data preparation
+We used two publicly available autonomous driving datasets in our paper: the 2D object detection subset of the KITTI
+Vision Benchmark Suite and nuImages, an extension of nuScenes dedicated to 2D object detection.
 
 Preparing the data involve both converting the annotations to the YOLO format and splitting the samples among the
 federated participants. In our experiments, we assume that the server holds a separate validation set and is 
@@ -60,6 +62,11 @@ to securely and reliably transfer a large volume of data to the cloud is to use 
 
 #### KITTI
 
+First go to https://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=2d and create an account to download
+the 2D object detection subset of KITTI. You will need to download the data samples,
+`left color images of object data set (12 GB)`, and data labels, `training labels of object data set (5 MB)`, and unzip
+the files in the `datasets` subfolder of this program.
+
 By default, 25% of the training data is sent to the central server, as KITTI does not
 feature a predefined validation set. For the remaining data, we perform a balanced and IID split among 5 clients.
 The DontCare attribute is ignored. The random seed is fixed so that splitting is reproducible. To perform both the
@@ -70,6 +77,10 @@ python datasets/prepare_kitti.py --data data/kitti.yaml --tar
 ```
 
 #### nuImages
+
+Go to https://nuscenes.org/nuimages and create an account, then download the samples and metadata (sweeps are not 
+needed), and unzip the files in the `datasets` subfolder of this program. Unlike KITTI, nuImages is organized
+as a relational database, and we will use the `nuscenes-devkit` to manipulate the files.
 
 nuImages feature a predefined validation set which is stored on the server, while the training data is split non-IID
 among 10 clients based on the locations and timeframes at which the data samples were captured.
@@ -84,7 +95,15 @@ And the following to retain the full long-tail distribution with 23 classes:
 python datasets/prepare_nuimages.py --data data/nuimages.yaml --class-map 23 --tar
 ```
 
-### Downloading pre-trained weights
+## 🚀 Run a Job
+
+We provide an example job script for the centralized and the federated settings, assuming the cluster supports the
+Slurm Workload Manager. To launch a federated experiment, you will need to modify `run_federated.sh` and then run
+the command:
+
+```bash
+sbatch run_federated.sh
+```
 
 Starting federated learning after a pre-training phase has been shown to reduce the gap with centralized learning, thus
 we use official YOLOv7 weights pre-trained on MS COCO to initialize an experiment. Downloading the appropriate weights
@@ -99,21 +118,7 @@ bash weights/get_weights.sh yolov7-tiny
 
 The pre-trained weights will then be added to the `weights/yolov7/` directory.
 
-### Launching a job
-
-We provide an example job script for the centralized and the federated settings, assuming the cluster supports the
-Slurm Workload Manager. To launch a federated experiment, you will need to modify `run_federated.sh` and then run
-the command:
-
-```bash
-sbatch run_federated.sh
-```
-
-### Inference speed
-
-For simplicity, speed measurements were performed on Google Colab.
-
-## Citation
+## 🎓 Citation
 If you find FedPylot is useful in your research or applications, please consider giving us a star 🌟 and citing our
 paper.
 
@@ -126,9 +131,9 @@ paper.
 }
 ```
 
-## Acknowledgement
+## 🤝 Acknowledgements
 We sincerely thank the authors of [YOLOv7](https://github.com/WongKinYiu/yolov7) for providing their code to
 the community!
 
-## License
-FedPylot is under the [GPL-3.0 Licence](./LICENSE).
+## 📜 License
+FedPylot is released under the [GPL-3.0 Licence](LICENSE).
