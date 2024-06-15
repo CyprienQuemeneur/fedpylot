@@ -4,16 +4,18 @@ This README is currently under construction 🚧.
 
 ## Table of Contents
 
-- [🔥 What's New](#-whats-new)
-- [📖 Introduction](#-introduction)
-- [🐍 Installation](#-installation)
-- [⚙️ Data Preparation](#-data-preparation)
-- [🚀 Run a Job](#-run-a-job)
-- [🎓 Citation](#️-citation)
-- [🤝 Acknowledgements](#-acknowledgements)
-- [📜 License](#-license)
+- 🔥 [What's New](#-whats-new)
+- 📖 [Introduction](#-introduction)
+- 🐍 [Installation](#-installation)
+- ⚙️ [Data Preparation](#%EF%B8%8F-data-preparation)
+- 🚀 [Running a Job](#-running-a-job)
+- 🎓 [Citation](#-citation)
+- 🤝 [Acknowledgements](#-acknowledgements)
+- 📜 [License](#-license)
 
 ## 🔥 What's New
+
+This is the initial release! 🤗
 
 ## 📖 Introduction
 
@@ -43,8 +45,6 @@ pip install -r requirements.txt
 Installing all the packages on your cluster can come with some subtleties, and we would advise to refer to the
 documentation of your cluster for package installation and loading.
 
-For convenience, speed measurements were performed on Google Colab. You can check our notebook which
-
 ## ⚙️ Data Preparation
 
 We used two publicly available autonomous driving datasets in our paper: the 2D object detection subset of the KITTI
@@ -56,9 +56,9 @@ responsible for evaluating the global model.
 
 Data preparation should ideally be run locally. Splitting the original dataset will create a folder for each
 federated participants (server and clients) which will contain the samples and labels. Archiving the folders before
-sending them to the cluster is recommended and can be performed automatically by the preparation scripts. A good way
-to securely and reliably transfer a large volume of data to the cloud is to use a tool such as 
-[Globus](https://www.globus.org/).
+sending them to the cluster is recommended and can be performed automatically by the preparation scripts (intermediate
+folders will not be deleted, ensure you have enough disk space). A good way to securely and reliably transfer a large
+volume of data to the cloud is to use a tool such as [Globus](https://www.globus.org/).
 
 #### KITTI
 
@@ -76,6 +76,8 @@ split and the annotation conversion, run the following:
 python datasets/prepare_kitti.py --tar
 ```
 
+If you wish to modify our splitting strategy, simply edit `prepare_kitti.py`.
+
 #### nuImages
 
 Go to https://nuscenes.org/nuimages and create an account, then download the samples and metadata (sweeps are not 
@@ -85,9 +87,9 @@ properly, you need to create a `nuimages` folder and move the folders correspond
 The folder structure should then be the following:
 ```
 /datasets/nuimages
-    samples	-	Sensor data for keyframes (annotated images).
-    v1.0-train	-	JSON tables that include all the metadata and annotations for the training set.
-    v1.0-train	-	JSON tables that include all the metadata and annotations for the validation set.
+    samples	- Sensor data for keyframes (annotated images).
+    v1.0-train  -  JSON tables that include all the metadata and annotations for the training set.
+    v1.0-val    -  JSON tables that include all the metadata and annotations for the validation set.
 ```
 
 nuImages predefined validation set is stored on the server, while the training data is split non-IID
@@ -103,28 +105,36 @@ And the following to retain the full long-tail distribution with 23 classes:
 python datasets/prepare_nuimages.py --class-map 23 --tar
 ```
 
-## 🚀 Run a Job
+If you wish to modify our splitting strategy, simply edit `prepare_nuimages.py`.
 
-We provide an example job script for the centralized and the federated settings, assuming the cluster supports the
-Slurm Workload Manager. To launch a federated experiment, you will need to modify `run_federated.sh` and then run
-the command:
+## 🚀 Running a Job
 
-```bash
-sbatch run_federated.sh
-```
-
-Starting federated learning after a pre-training phase has been shown to reduce the gap with centralized learning, thus
-we use official YOLOv7 weights pre-trained on MS COCO to initialize an experiment. Downloading the appropriate weights
-is normally performed by the script that launches the job, but you need to do it manually if Internet connexions are
-not available on the computing nodes of your cluster.
-
-FedPylot supports all YOLOv7 variants. For example, to download pre-trained weights for YOLOv7-tiny run the following:
+We provide template job scripts for the centralized and the federated settings, assuming the cluster supports the
+Slurm Workload Manager. We use official YOLOv7 weights pre-trained on MS COCO to initialize an experiment. Downloading 
+the appropriate weights is normally performed by the script that launches the job, but you need to do it manually if
+Internet connexions are not available on the computing nodes of your cluster. FedPylot supports all YOLOv7 variants.
+For example, to download pre-trained weights for YOLOv7-tiny run the following:
 
 ```bash
 bash weights/get_weights.sh yolov7-tiny
 ```
 
-The pre-trained weights will then be added to the `weights/yolov7/` directory.
+To launch a federated experiment, you will need to modify `run_federated.sh` to fit your cluster's requirements and
+choose the experimental settings, then run the command:
+
+```bash
+sbatch run_federated.sh
+```
+
+Similarly, to perform centralized learning, edit `run_centralized.sh` and then execute:
+
+```bash
+sbatch run_centralized.sh
+```
+
+In all cases, the data are copied to the local storage of the node(s) before training begins. For the federated setting,
+this is performed with a separate MPI script `scatter_data.py`, which ensures that the local datasets are dispatched to
+the appropriate federated participants.
 
 ## 🎓 Citation
 If you find FedPylot is useful in your research or applications, please consider giving us a star 🌟 and citing our
