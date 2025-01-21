@@ -1,23 +1,13 @@
-This README is currently under construction 🚧.
+<div align="center">
+  <img src="assets/logo.png" width=600 alt="">
+</div>
 
+--------------------------------------
 
+# FedPylot: Navigating Federated Learning for Real-Time Object Detection in Internet of Vehicles
 
-## Table of Contents
-
-- 🔥 [What's New](#-whats-new)
-- 📖 [Introduction](#-introduction)
-- 🐍 [Installation](#-installation)
-- ⚙️ [Data Preparation](#%EF%B8%8F-data-preparation)
-- 🚀 [Running a Job](#-running-a-job)
-- 🎓 [Citation](#-citation)
-- 🤝 [Acknowledgements](#-acknowledgements)
-- 📜 [License](#-license)
-
-## 🔥 What's New
-
-This is the initial release! 🤗
-
-## 📖 Introduction
+[![license](https://img.shields.io/badge/license-GPLv3-green)](https://github.com/CyprienQuemeneur/fedpylot/blob/main/LICENSE)
+[![arXiv](https://img.shields.io/badge/arXiv-2406.03611-red)](https://arxiv.org/abs/2406.03611)
 
 **Official repository** of:
 - [Cyprien Quéméneur](https://scholar.google.com/citations?hl=en&user=qQ5fKGgAAAAJ),
